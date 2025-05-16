@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>上班日历</title>
     <style>
         * {
@@ -12,25 +12,35 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+            position: fixed;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-            min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             color: #fff;
             padding: 10px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .calendar-container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 90%;
+            width: 100%;
             max-width: 800px;
+            margin: 0 auto;
+            overflow: hidden;
         }
 
         .calendar-header {
@@ -236,83 +246,103 @@
         @media (max-width: 600px) {
             body {
                 padding: 5px;
-                align-items: flex-start;
-                padding-top: 10px;
-                min-height: -webkit-fill-available;
+                height: 100%;
+                width: 100vw;
             }
 
             .calendar-container {
-                padding: 10px;
-                width: 100%;
-                max-width: 100%;
+                padding: 8px;
                 border-radius: 15px;
-                margin: 0 auto;
+                height: auto;
+                min-height: calc(100vh - 10px);
+            }
+
+            .calendar-header {
+                margin-bottom: 10px;
+            }
+
+            .date-selector {
+                gap: 5px;
             }
 
             .days {
-                gap: 3px;
+                gap: 2px;
             }
 
             .day {
-                min-height: 60px;
-                padding: 2px 1px;
-                font-size: 0.9em;
+                min-height: 45px;
+                padding: 1px;
+                font-size: 0.85em;
+                height: calc((100vw - 30px) / 7);
+                max-height: 80px;
             }
 
             .day .date {
-                font-size: 0.9em;
+                font-size: 0.85em;
                 margin-top: 1px;
             }
 
             .day .lunar-date {
-                font-size: 0.6em;
-                margin-top: 0;
+                font-size: 0.55em;
+                margin: 0;
             }
 
             .day .shift {
-                font-size: 0.7em;
-                margin: 1px 0;
+                font-size: 0.65em;
+                margin: 0;
             }
 
             .day .festival {
-                font-size: 0.55em;
+                font-size: 0.5em;
                 bottom: 1px;
             }
             
             .day .holiday-name {
-                bottom: 14px;
-                font-size: 0.55em;
+                bottom: 12px;
+                font-size: 0.5em;
             }
 
             .day .triple-pay {
-                font-size: 0.6em;
-                padding: 0px 2px;
+                font-size: 0.55em;
+                padding: 0 1px;
+                top: 1px;
+                right: 1px;
             }
 
             .weekdays div {
-                font-size: 0.8em;
-                padding: 5px 2px;
+                font-size: 0.75em;
+                padding: 3px 1px;
             }
 
             select {
-                font-size: 0.85em !important;
-                padding: 5px 10px !important;
+                font-size: 0.8em !important;
+                padding: 4px 8px !important;
+            }
+
+            .nav-btn {
+                padding: 4px;
             }
 
             .nav-btn svg {
-                width: 20px;
-                height: 20px;
+                width: 18px;
+                height: 18px;
             }
 
             .legend {
-                gap: 10px;
-                margin-top: 15px;
-                font-size: 0.8em;
+                gap: 8px;
+                margin-top: 10px;
+                font-size: 0.75em;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .legend-item {
+                gap: 4px;
             }
 
             .legend-color {
-                width: 15px;
-                height: 15px;
+                width: 12px;
+                height: 12px;
             }
         }
 
@@ -322,16 +352,14 @@
             }
 
             .calendar-container {
-                padding: 8px;
-            }
-
-            .days {
-                gap: 2px;
+                padding: 5px;
+                border-radius: 10px;
             }
 
             .day {
-                min-height: 50px;
-                padding: 2px 1px;
+                min-height: 40px;
+                height: calc((100vw - 20px) / 7);
+                max-height: 60px;
             }
 
             .day .date {
@@ -339,26 +367,40 @@
             }
 
             .day .lunar-date {
-                font-size: 0.5em;
+                font-size: 0.45em;
             }
 
             .day .shift {
-                font-size: 0.6em;
-                margin: 0;
+                font-size: 0.55em;
             }
 
-            .day .festival {
-                font-size: 0.45em;
-            }
-            
+            .day .festival,
             .day .holiday-name {
-                bottom: 12px;
                 font-size: 0.45em;
             }
 
             .legend {
-                gap: 8px;
-                font-size: 0.75em;
+                gap: 6px;
+                font-size: 0.7em;
+            }
+
+            .legend-color {
+                width: 10px;
+                height: 10px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .calendar-container {
+                height: auto;
+                max-height: calc(100vh - 10px);
+                overflow-y: auto;
+            }
+
+            .day {
+                min-height: 35px;
+                height: calc((100vh - 120px) / 6);
+                max-height: 50px;
             }
         }
 
