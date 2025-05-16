@@ -123,6 +123,7 @@
         .day .shift {
             font-size: 0.8em;
             color: rgba(255, 255, 255, 0.7);
+            margin-top: 2px;
         }
 
         .day.day-shift {
@@ -135,6 +136,36 @@
 
         .day.rest-day {
             background: rgba(244, 67, 54, 0.2);
+        }
+
+        .day.holiday {
+            background: rgba(255, 193, 7, 0.2) !important;
+        }
+
+        .day .holiday-name {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65em;
+            color: #FFC107;
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            padding: 0 2px;
+            font-weight: 500;
+        }
+
+        .day .triple-pay {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.75em;
+            color: #FFC107;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1px 3px;
+            border-radius: 3px;
         }
 
         .legend {
@@ -172,6 +203,10 @@
         .legend-color.today {
             background: transparent;
             border: 2px solid #4CAF50;
+        }
+
+        .legend-color.holiday {
+            background: rgba(255, 193, 7, 0.2);
         }
 
         @media (max-width: 600px) {
@@ -247,6 +282,10 @@
                 <span>休息</span>
             </div>
             <div class="legend-item">
+                <span class="legend-color holiday"></span>
+                <span>节假日</span>
+            </div>
+            <div class="legend-item">
                 <span class="legend-color today"></span>
                 <span>今天</span>
             </div>
@@ -255,6 +294,50 @@
     <script>
         // 基准日期：2025年5月16日是上班的第一天
         const baseDate = new Date(2025, 4, 16); // 月份从0开始，所以5月是4
+
+        // 2025年法定节假日数据（按照往年惯例预估，具体以国务院通知为准）
+        const holidays2025 = {
+            // 元旦：1天假期
+            '2025-01-01': '元旦',
+            
+            // 春节：7天假期
+            '2025-01-28': '除夕',
+            '2025-01-29': '春节',
+            '2025-01-30': '春节',
+            '2025-01-31': '春节',
+            '2025-02-01': '春节',
+            '2025-02-02': '春节',
+            '2025-02-03': '春节',
+            '2025-02-04': '春节',
+            
+            // 清明节：3天假期
+            '2025-04-04': '清明节',
+            '2025-04-05': '清明节',
+            '2025-04-06': '清明节',
+            
+            // 劳动节：5天假期
+            '2025-05-01': '劳动节',
+            '2025-05-02': '劳动节',
+            '2025-05-03': '劳动节',
+            '2025-05-04': '劳动节',
+            '2025-05-05': '劳动节',
+            
+            // 端午节：3天假期（农历五月初五）
+            '2025-05-31': '端午节',
+            '2025-06-01': '端午节',
+            '2025-06-02': '端午节',
+
+            
+            // 国庆节：7天假期
+            '2025-10-01': '国庆节',
+            '2025-10-02': '国庆节',
+            '2025-10-03': '国庆节',
+            '2025-10-04': '国庆节',
+            '2025-10-05': '国庆节',
+            '2025-10-06': '国庆节',
+            '2025-10-07': '国庆节',
+            '2025-10-08': '国庆节',
+        };
 
         // 获取工作状态
         function getWorkStatus(date) {
@@ -275,6 +358,22 @@
                 // 休息日
                 return '休息';
             }
+        }
+
+        // 判断是否是节假日并返回节日名称
+        function getHolidayName(date) {
+            // 注意：JavaScript的月份是从0开始的，所以需要+1
+            const month = date.getMonth() + 1;
+            const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            return holidays2025[dateStr] || null;
+        }
+
+        // 判断是否是三倍工资
+        function isTriplePay(date) {
+            const workStatus = getWorkStatus(date);
+            const holidayName = getHolidayName(date);
+            // 节假日期间的工作日都算三倍工资
+            return holidayName && (workStatus === '白班' || workStatus === '夜班');
         }
 
         // 初始化年份选择器
@@ -320,12 +419,17 @@
                 const dateNumber = document.createElement('div');
                 dateNumber.className = 'date';
                 dateNumber.textContent = date;
+                dayElement.appendChild(dateNumber);
 
+                // 获取节假日名称
+                const holidayName = getHolidayName(currentDate);
+                
                 // 工作状态
                 const workStatus = getWorkStatus(currentDate);
                 const shiftElement = document.createElement('div');
                 shiftElement.className = 'shift';
                 shiftElement.textContent = workStatus;
+                dayElement.appendChild(shiftElement);
 
                 // 添加对应的类
                 if (workStatus === '白班') {
@@ -343,8 +447,23 @@
                     dayElement.classList.add('today');
                 }
 
-                dayElement.appendChild(dateNumber);
-                dayElement.appendChild(shiftElement);
+                // 标记节假日和显示节日名称
+                if (holidayName) {
+                    dayElement.classList.add('holiday');
+                    const holidayElement = document.createElement('div');
+                    holidayElement.className = 'holiday-name';
+                    holidayElement.textContent = holidayName;
+                    dayElement.appendChild(holidayElement);
+                }
+
+                // 标记三倍工资
+                if (isTriplePay(currentDate)) {
+                    const triplePayElement = document.createElement('div');
+                    triplePayElement.className = 'triple-pay';
+                    triplePayElement.textContent = '3x';
+                    dayElement.appendChild(triplePayElement);
+                }
+
                 daysContainer.appendChild(dayElement);
             }
         }
