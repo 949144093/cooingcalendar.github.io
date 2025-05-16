@@ -20,6 +20,7 @@
             justify-content: center;
             align-items: center;
             color: #fff;
+            padding: 10px;
         }
 
         .calendar-container {
@@ -98,12 +99,14 @@
             aspect-ratio: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             position: relative;
             transition: transform 0.3s, background-color 0.3s;
+            padding: 5px 2px;
+            min-height: 80px;
         }
 
         .day:hover {
@@ -116,8 +119,15 @@
         }
 
         .day .date {
-            font-size: 1.2em;
-            margin-bottom: 4px;
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .day .lunar-date {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2px;
         }
 
         .day .shift {
@@ -142,9 +152,23 @@
             background: rgba(255, 193, 7, 0.2) !important;
         }
 
-        .day .holiday-name {
+        .day .festival {
             position: absolute;
             bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65em;
+            color: #FF9800;
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            padding: 0 2px;
+            font-weight: 500;
+        }
+
+        .day .holiday-name {
+            position: absolute;
+            bottom: 18px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.65em;
@@ -210,22 +234,90 @@
         }
 
         @media (max-width: 600px) {
+            body {
+                padding: 5px;
+                align-items: flex-start;
+                padding-top: 20px;
+            }
+
             .calendar-container {
                 padding: 10px;
+                width: 100%;
+            }
+
+            .day {
+                min-height: 60px;
+                padding: 2px;
             }
 
             .day .date {
-                font-size: 1em;
+                font-size: 0.9em;
+            }
+
+            .day .lunar-date {
+                font-size: 0.6em;
             }
 
             .day .shift {
                 font-size: 0.7em;
+            }
+
+            .day .festival {
+                font-size: 0.55em;
+            }
+            
+            .day .holiday-name {
+                bottom: 14px;
+                font-size: 0.55em;
+            }
+
+            .day .triple-pay {
+                font-size: 0.65em;
+                padding: 0px 2px;
+            }
+
+            .weekdays div {
+                font-size: 0.8em;
+                padding: 5px 2px;
+            }
+
+            select {
+                font-size: 0.9em !important;
+                padding: 6px 12px !important;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .day {
+                min-height: 50px;
+            }
+
+            .day .date {
+                font-size: 0.8em;
+            }
+
+            .day .lunar-date {
+                font-size: 0.55em;
+            }
+
+            .day .shift {
+                font-size: 0.65em;
+            }
+
+            .day .festival {
+                font-size: 0.5em;
+            }
+            
+            .day .holiday-name {
+                bottom: 12px;
+                font-size: 0.5em;
             }
         }
     </style>
 </head>
 
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/chinese-lunar-calendar/lib/calendar.js"></script>
     <div class="calendar-container">
         <div class="calendar-header">
             <button id="prevMonth" class="nav-btn">
@@ -295,7 +387,7 @@
         // 基准日期：2025年5月16日是上班的第一天
         const baseDate = new Date(2025, 4, 16); // 月份从0开始，所以5月是4
 
-        // 2025年法定节假日数据（按照往年惯例预估，具体以国务院通知为准）
+        // 2025年法定节假日数据
         const holidays2025 = {
             // 元旦：1天假期
             '2025-01-01': '元旦',
@@ -322,13 +414,12 @@
             '2025-05-04': '劳动节',
             '2025-05-05': '劳动节',
             
-            // 端午节：3天假期（农历五月初五）
+            // 端午节：3天假期
             '2025-05-31': '端午节',
             '2025-06-01': '端午节',
             '2025-06-02': '端午节',
-
             
-            // 国庆节：7天假期
+            // 国庆节：8天假期
             '2025-10-01': '国庆节',
             '2025-10-02': '国庆节',
             '2025-10-03': '国庆节',
@@ -337,6 +428,65 @@
             '2025-10-06': '国庆节',
             '2025-10-07': '国庆节',
             '2025-10-08': '国庆节',
+        };
+
+        // 三倍工资的日期
+        const triplePay2025 = [
+            '2025-01-01',  // 元旦
+            '2025-01-28',  // 除夕
+            '2025-01-29',  // 春节
+            '2025-01-30',  // 春节
+            '2025-01-31',  // 春节
+            '2025-04-04',  // 清明节
+            '2025-05-01',  // 劳动节
+            '2025-05-02',  // 劳动节
+            '2025-05-31',  // 端午节
+            '2025-10-01',  // 国庆节
+            '2025-10-02',  // 国庆节
+            '2025-10-03',  // 国庆节
+            '2025-10-06',  // 国庆节
+        ];
+
+        // 农历月份
+        const lunarMonths = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'];
+        
+        // 农历日期
+        const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+            '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+            '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+
+        // 节气（简化版，只显示主要节气）
+        const solarTerms = {
+            '2025-02-04': '立春',
+            '2025-03-05': '惊蛰',
+            '2025-03-20': '春分',
+            '2025-04-04': '清明',
+            '2025-05-05': '立夏',
+            '2025-06-21': '夏至',
+            '2025-07-22': '大暑',
+            '2025-08-07': '立秋',
+            '2025-09-22': '秋分',
+            '2025-10-08': '寒露',
+            '2025-11-07': '立冬',
+            '2025-12-21': '冬至'
+        };
+
+        // 固定日期的节日
+        const fixedFestivals = {
+            '01-01': '元旦',
+            '02-14': '情人节',
+            '03-08': '妇女节',
+            '03-12': '植树节',
+            '04-01': '愚人节',
+            '05-01': '劳动节',
+            '05-04': '青年节',
+            '06-01': '儿童节',
+            '07-01': '建党节',
+            '08-01': '建军节',
+            '09-10': '教师节',
+            '10-01': '国庆节',
+            '12-24': '平安夜',
+            '12-25': '圣诞节'
         };
 
         // 获取工作状态
@@ -368,12 +518,134 @@
             return holidays2025[dateStr] || null;
         }
 
+        // 判断是否是三倍工资日期
+        function isTriplePayDay(date) {
+            const month = date.getMonth() + 1;
+            const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            return triplePay2025.includes(dateStr);
+        }
+
         // 判断是否是三倍工资
         function isTriplePay(date) {
             const workStatus = getWorkStatus(date);
-            const holidayName = getHolidayName(date);
-            // 节假日期间的工作日都算三倍工资
-            return holidayName && (workStatus === '白班' || workStatus === '夜班');
+            // 只有在三倍工资日期内且是工作日才显示三倍工资标记
+            return isTriplePayDay(date) && (workStatus === '白班' || workStatus === '夜班');
+        }
+
+        // 获取特定月份第n个星期几的日期
+        function getNthWeekday(year, month, weekday, nth) {
+            let date = new Date(year, month, 1);
+            let count = 0;
+            
+            // 找到第n个对应的星期几
+            while (count < nth) {
+                if (date.getDay() === weekday) {
+                    count++;
+                }
+                if (count < nth) {
+                    date.setDate(date.getDate() + 1);
+                }
+            }
+            return date;
+        }
+
+        // 获取浮动节日
+        function getFloatingFestival(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+            
+            // 母亲节：5月第二个星期日
+            const motherDay = getNthWeekday(year, 4, 0, 2);
+            if (month === 4 && day === motherDay.getDate()) {
+                return '母亲节';
+            }
+            
+            // 父亲节：6月第三个星期日
+            const fatherDay = getNthWeekday(year, 5, 0, 3);
+            if (month === 5 && day === fatherDay.getDate()) {
+                return '父亲节';
+            }
+            
+            // 感恩节：11月第四个星期四
+            const thanksgiving = getNthWeekday(year, 10, 4, 4);
+            if (month === 10 && day === thanksgiving.getDate()) {
+                return '感恩节';
+            }
+
+            return null;
+        }
+
+        // 获取农历日期（简化版）
+        function getLunarDate(date) {
+            try {
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const monthDayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+                // 检查是否是节气
+                if (solarTerms[dateStr]) {
+                    return solarTerms[dateStr];
+                }
+
+                // 检查是否是固定节日
+                if (fixedFestivals[monthDayStr]) {
+                    return fixedFestivals[monthDayStr];
+                }
+
+                // 检查是否是浮动节日
+                const floatingFestival = getFloatingFestival(date);
+                if (floatingFestival) {
+                    return floatingFestival;
+                }
+
+                // 使用简单的偏移计算农历日期（这是个粗略的计算，仅作展示用）
+                // 以2025年春节（1月29日）为基准
+                const baseDate = new Date(2025, 0, 29); // 2025年春节
+                const diffDays = Math.floor((date - baseDate) / (24 * 60 * 60 * 1000));
+                
+                if (diffDays === 0) {
+                    return '春节';
+                }
+
+                // 简单的农历月份计算（粗略计算，实际应该使用农历历表）
+                let lunarMonth = Math.floor((diffDays + 12) / 30) % 12;
+                let lunarDay = (diffDays + 12) % 30;
+
+                if (lunarMonth < 0) {
+                    lunarMonth += 12;
+                }
+                if (lunarDay < 0) {
+                    lunarDay += 30;
+                }
+
+                return lunarMonths[lunarMonth] + '月' + lunarDays[lunarDay];
+            } catch (e) {
+                console.error('农历转换错误:', e);
+                return '';
+            }
+        }
+
+        // 获取节日名称
+        function getFestivalName(date) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const monthDayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const dateStr = `${date.getFullYear()}-${monthDayStr}`;
+
+            // 检查是否是节气
+            if (solarTerms[dateStr]) {
+                return solarTerms[dateStr];
+            }
+
+            // 检查是否是固定节日
+            if (fixedFestivals[monthDayStr]) {
+                return fixedFestivals[monthDayStr];
+            }
+
+            // 检查是否是浮动节日
+            return getFloatingFestival(date);
         }
 
         // 初始化年份选择器
@@ -421,9 +693,13 @@
                 dateNumber.textContent = date;
                 dayElement.appendChild(dateNumber);
 
-                // 获取节假日名称
-                const holidayName = getHolidayName(currentDate);
-                
+                // 农历日期
+                const lunarDate = getLunarDate(currentDate);
+                const lunarElement = document.createElement('div');
+                lunarElement.className = 'lunar-date';
+                lunarElement.textContent = lunarDate;
+                dayElement.appendChild(lunarElement);
+
                 // 工作状态
                 const workStatus = getWorkStatus(currentDate);
                 const shiftElement = document.createElement('div');
@@ -447,6 +723,9 @@
                     dayElement.classList.add('today');
                 }
 
+                // 获取节假日名称
+                const holidayName = getHolidayName(currentDate);
+                
                 // 标记节假日和显示节日名称
                 if (holidayName) {
                     dayElement.classList.add('holiday');
@@ -454,6 +733,15 @@
                     holidayElement.className = 'holiday-name';
                     holidayElement.textContent = holidayName;
                     dayElement.appendChild(holidayElement);
+                }
+
+                // 获取并显示节日
+                const festivalName = getFestivalName(currentDate);
+                if (festivalName && !holidayName) {  // 如果不是法定节假日才显示普通节日
+                    const festivalElement = document.createElement('div');
+                    festivalElement.className = 'festival';
+                    festivalElement.textContent = festivalName;
+                    dayElement.appendChild(festivalElement);
                 }
 
                 // 标记三倍工资
