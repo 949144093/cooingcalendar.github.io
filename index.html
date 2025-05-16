@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>上班日历</title>
     <style>
         * {
@@ -237,17 +237,26 @@
             body {
                 padding: 5px;
                 align-items: flex-start;
-                padding-top: 20px;
+                padding-top: 10px;
+                min-height: -webkit-fill-available;
             }
 
             .calendar-container {
                 padding: 10px;
                 width: 100%;
+                max-width: 100%;
+                border-radius: 15px;
+                margin: 0 auto;
+            }
+
+            .days {
+                gap: 3px;
             }
 
             .day {
-                min-height: 75px;
-                padding: 3px 2px;
+                min-height: 60px;
+                padding: 2px 1px;
+                font-size: 0.9em;
             }
 
             .day .date {
@@ -257,6 +266,7 @@
 
             .day .lunar-date {
                 font-size: 0.6em;
+                margin-top: 0;
             }
 
             .day .shift {
@@ -270,15 +280,13 @@
             }
             
             .day .holiday-name {
-                bottom: 16px;
+                bottom: 14px;
                 font-size: 0.55em;
             }
 
             .day .triple-pay {
-                font-size: 0.65em;
+                font-size: 0.6em;
                 padding: 0px 2px;
-                top: 1px;
-                right: 1px;
             }
 
             .weekdays div {
@@ -287,14 +295,42 @@
             }
 
             select {
-                font-size: 0.9em !important;
-                padding: 6px 12px !important;
+                font-size: 0.85em !important;
+                padding: 5px 10px !important;
+            }
+
+            .nav-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .legend {
+                gap: 10px;
+                margin-top: 15px;
+                font-size: 0.8em;
+            }
+
+            .legend-color {
+                width: 15px;
+                height: 15px;
             }
         }
 
         @media (max-width: 400px) {
+            body {
+                padding: 3px;
+            }
+
+            .calendar-container {
+                padding: 8px;
+            }
+
+            .days {
+                gap: 2px;
+            }
+
             .day {
-                min-height: 65px;
+                min-height: 50px;
                 padding: 2px 1px;
             }
 
@@ -303,21 +339,33 @@
             }
 
             .day .lunar-date {
-                font-size: 0.55em;
+                font-size: 0.5em;
             }
 
             .day .shift {
-                font-size: 0.65em;
-                margin: 1px 0;
+                font-size: 0.6em;
+                margin: 0;
             }
 
             .day .festival {
-                font-size: 0.5em;
+                font-size: 0.45em;
             }
             
             .day .holiday-name {
-                bottom: 14px;
-                font-size: 0.5em;
+                bottom: 12px;
+                font-size: 0.45em;
+            }
+
+            .legend {
+                gap: 8px;
+                font-size: 0.75em;
+            }
+        }
+
+        /* 添加 iOS Safari 的特殊处理 */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                min-height: -webkit-fill-available;
             }
         }
     </style>

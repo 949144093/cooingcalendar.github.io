@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时收入计算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#00C48C',
+                        neutral: '#F5F7FA',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(22, 93, 255, 0.1);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                background-image: linear-gradient(135deg, #165DFF, #00C48C);
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral min-h-screen font-inter text-dark">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- 标题区域 -->
+        <div class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gradient mb-3">
+                <i class="fa-solid fa-calculator mr-3"></i>实时收入计算器
+            </h1>
+            <p class="text-gray-600 text-lg">精确计算你的每一秒价值，见证时间如何转化为财富</p>
+        </div>
+
+        <!-- 输入表单卡片 -->
+        <div class="bg-white rounded-2xl p-8 mb-8 card-shadow transition-all duration-300 hover:shadow-lg">
+            <form id="incomeForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="monthlySalary" class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fa-solid fa-money-bill-wave mr-2"></i>月薪 (元)
+                        </label>
+                        <input type="number" id="monthlySalary" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="输入你的月薪" required>
+                    </div>
+                    <div>
+                        <label for="workDays" class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fa-solid fa-calendar-days mr-2"></i>每月工作天数
+                        </label>
+                        <input type="number" id="workDays" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="每月工作多少天" required>
+                    </div>
+                    <div>
+                        <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fa-solid fa-clock mr-2"></i>开始工作时间 (HH:MM)
+                        </label>
+                        <input type="time" id="startTime" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" required>
+                    </div>
+                    <div>
+                        <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fa-solid fa-clock mr-2"></i>结束工作时间 (HH:MM)
+                        </label>
+                        <input type="time" id="endTime" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" required>
+                    </div>
+                </div>
+                <div class="text-center pt-4">
+                    <button type="submit" class="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                        <i class="fa-solid fa-calculator mr-2"></i>计算收入
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 结果展示卡片 -->
+        <div id="resultCard" class="bg-white rounded-2xl p-8 card-shadow hidden transition-all duration-500 opacity-0">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-dark mb-4">
+                    <i class="fa-solid fa-chart-line mr-2"></i>收入统计
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-neutral rounded-xl p-4 text-center">
+                        <p class="text-gray-500 text-sm mb-1">时薪</p>
+                        <p id="hourlyRate" class="text-2xl font-bold text-primary">0.00 元/小时</p>
+                    </div>
+                    <div class="bg-neutral rounded-xl p-4 text-center">
+                        <p class="text-gray-500 text-sm mb-1">日薪</p>
+                        <p id="dailyRate" class="text-2xl font-bold text-primary">0.00 元/天</p>
+                    </div>
+                    <div class="bg-neutral rounded-xl p-4 text-center">
+                        <p class="text-gray-500 text-sm mb-1">每秒价值</p>
+                        <p id="secondRate" class="text-2xl font-bold text-primary">0.00 元/秒</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时收入显示 -->
+            <div class="relative bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 text-center mb-6 overflow-hidden">
+                <div class="absolute inset-0 bg-[url('https://picsum.photos/1200/300')] opacity-5 bg-cover bg-center"></div>
+                <div class="relative z-10">
+                    <p class="text-gray-600 text-lg mb-2">今日已赚取</p>
+                    <p id="currentEarnings" class="text-[clamp(2.5rem,8vw,4rem)] font-bold text-dark animate-pulse-slow">0.00 元</p>
+                    <p id="timeWorked" class="text-gray-500 mt-2">工作时间: 00:00:00</p>
+                </div>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">今日收入进度</span>
+                    <span id="progressPercentage" class="text-sm font-medium text-primary">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 重置按钮 -->
+            <div class="text-center">
+                <button id="resetBtn" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                    <i class="fa-solid fa-refresh mr-2"></i>重新计算
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const incomeForm = document.getElementById('incomeForm');
+        const resultCard = document.getElementById('resultCard');
+        const monthlySalaryInput = document.getElementById('monthlySalary');
+        const workDaysInput = document.getElementById('workDays');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const hourlyRateElement = document.getElementById('hourlyRate');
+        const dailyRateElement = document.getElementById('dailyRate');
+        const secondRateElement = document.getElementById('secondRate');
+        const currentEarningsElement = document.getElementById('currentEarnings');
+        const timeWorkedElement = document.getElementById('timeWorked');
+        const progressBarElement = document.getElementById('progressBar');
+        const progressPercentageElement = document.getElementById('progressPercentage');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 全局变量
+        let secondRate = 0;
+        let startTime = null;
+        let endTime = null;
+        let dailyRate = 0;
+        let intervalId = null;
+
+        // 表单提交处理
+        incomeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取输入值
+            const monthlySalary = parseFloat(monthlySalaryInput.value);
+            const workDays = parseInt(workDaysInput.value);
+            const startTimeStr = startTimeInput.value;
+            const endTimeStr = endTimeInput.value;
+
+            // 计算时薪、日薪和每秒价值
+            const hoursPerDay = calculateHoursPerDay(startTimeStr, endTimeStr);
+            dailyRate = monthlySalary / workDays;
+            const hourlyRate = dailyRate / hoursPerDay;
+            secondRate = hourlyRate / 3600;
+
+            // 格式化并显示结果
+            hourlyRateElement.textContent = hourlyRate.toFixed(2) + ' 元/小时';
+            dailyRateElement.textContent = dailyRate.toFixed(2) + ' 元/天';
+            secondRateElement.textContent = secondRate.toFixed(4) + ' 元/秒';
+
+            // 设置开始和结束时间
+            const now = new Date();
+            const [startHours, startMinutes] = startTimeStr.split(':').map(Number);
+            const [endHours, endMinutes] = endTimeStr.split(':').map(Number);
+            
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHours, startMinutes);
+            endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHours, endMinutes);
+            
+            // 如果当前时间早于开始时间，则使用开始时间作为基准
+            if (now < startTime) {
+                startTime = new Date(now);
+            }
+
+            // 显示结果卡片并添加动画
+            resultCard.classList.remove('hidden');
+            setTimeout(() => {
+                resultCard.classList.remove('opacity-0');
+            }, 10);
+
+            // 开始实时计算
+            updateEarnings();
+            intervalId = setInterval(updateEarnings, 1000);
+        });
+
+        // 重置按钮处理
+        resetBtn.addEventListener('click', function() {
+            clearInterval(intervalId);
+            resultCard.classList.add('opacity-0');
+            setTimeout(() => {
+                resultCard.classList.add('hidden');
+                incomeForm.reset();
+            }, 500);
+        });
+
+        // 计算每天工作小时数
+        function calculateHoursPerDay(startTimeStr, endTimeStr) {
+            const [startHours, startMinutes] = startTimeStr.split(':').map(Number);
+            const [endHours, endMinutes] = endTimeStr.split(':').map(Number);
+            
+            const startMinutesTotal = startHours * 60 + startMinutes;
+            const endMinutesTotal = endHours * 60 + endMinutes;
+            
+            return (endMinutesTotal - startMinutesTotal) / 60;
+        }
+
+        // 更新收入计算
+        function updateEarnings() {
+            const now = new Date();
+            let workedTime = 0;
+            
+            // 如果当前时间在工作时间范围内
+            if (now >= startTime && now <= endTime) {
+                workedTime = (now - startTime) / 1000; // 秒
+            } 
+            // 如果当前时间超过结束时间
+            else if (now > endTime) {
+                workedTime = (endTime - startTime) / 1000; // 秒
+            }
+            
+            // 计算已赚取金额
+            const currentEarnings = workedTime * secondRate;
+            
+            // 格式化工作时间
+            const hours = Math.floor(workedTime / 3600);
+            const minutes = Math.floor((workedTime % 3600) / 60);
+            const seconds = Math.floor(workedTime % 60);
+            
+            const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 更新显示
+            currentEarningsElement.textContent = currentEarnings.toFixed(2) + ' 元';
+            timeWorkedElement.textContent = `工作时间: ${formattedTime}`;
+            
+            // 更新进度条
+            const progressPercentage = (currentEarnings / dailyRate) * 100;
+            progressBarElement.style.width = `${Math.min(100, progressPercentage)}%`;
+            progressPercentageElement.textContent = `${Math.min(100, Math.round(progressPercentage))}%`;
+        }
+    </script>
+</body>
+</html>    
