@@ -106,7 +106,8 @@
             position: relative;
             transition: transform 0.3s, background-color 0.3s;
             padding: 5px 2px;
-            min-height: 80px;
+            min-height: 90px;
+            gap: 2px;
         }
 
         .day:hover {
@@ -121,19 +122,18 @@
         .day .date {
             font-size: 1.1em;
             font-weight: 500;
-            margin-bottom: 2px;
+            margin-top: 2px;
         }
 
         .day .lunar-date {
             font-size: 0.7em;
             color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 2px;
         }
 
         .day .shift {
             font-size: 0.8em;
             color: rgba(255, 255, 255, 0.7);
-            margin-top: 2px;
+            margin: 2px 0;
         }
 
         .day.day-shift {
@@ -168,7 +168,7 @@
 
         .day .holiday-name {
             position: absolute;
-            bottom: 18px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.65em;
@@ -182,8 +182,8 @@
 
         .day .triple-pay {
             position: absolute;
-            top: 2px;
-            right: 2px;
+            top: 1px;
+            right: 1px;
             font-size: 0.75em;
             color: #FFC107;
             font-weight: bold;
@@ -246,12 +246,13 @@
             }
 
             .day {
-                min-height: 60px;
-                padding: 2px;
+                min-height: 75px;
+                padding: 3px 2px;
             }
 
             .day .date {
                 font-size: 0.9em;
+                margin-top: 1px;
             }
 
             .day .lunar-date {
@@ -260,20 +261,24 @@
 
             .day .shift {
                 font-size: 0.7em;
+                margin: 1px 0;
             }
 
             .day .festival {
                 font-size: 0.55em;
+                bottom: 1px;
             }
             
             .day .holiday-name {
-                bottom: 14px;
+                bottom: 16px;
                 font-size: 0.55em;
             }
 
             .day .triple-pay {
                 font-size: 0.65em;
                 padding: 0px 2px;
+                top: 1px;
+                right: 1px;
             }
 
             .weekdays div {
@@ -289,7 +294,8 @@
 
         @media (max-width: 400px) {
             .day {
-                min-height: 50px;
+                min-height: 65px;
+                padding: 2px 1px;
             }
 
             .day .date {
@@ -302,6 +308,7 @@
 
             .day .shift {
                 font-size: 0.65em;
+                margin: 1px 0;
             }
 
             .day .festival {
@@ -309,7 +316,7 @@
             }
             
             .day .holiday-name {
-                bottom: 12px;
+                bottom: 14px;
                 font-size: 0.5em;
             }
         }
@@ -317,7 +324,7 @@
 </head>
 
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/chinese-lunar-calendar/lib/calendar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/sxei/js-calendar/calendar.js"></script>
     <div class="calendar-container">
         <div class="calendar-header">
             <button id="prevMonth" class="nav-btn">
@@ -447,27 +454,52 @@
             '2025-10-06',  // 国庆节
         ];
 
-        // 农历月份
-        const lunarMonths = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'];
-        
-        // 农历日期
-        const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
-            '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
-            '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+        // 2025年农历数据（月份数据，对应每月初一的公历日期）
+        const lunarMonths2025 = {
+            '0129': '正月',  // 春节
+            '0227': '二月',
+            '0329': '三月',
+            '0428': '四月',  // 四月初一
+            '0527': '五月',
+            '0626': '六月',
+            '0725': '七月',
+            '0824': '八月',
+            '0922': '九月',
+            '1022': '十月',
+            '1120': '冬月',
+            '1220': '腊月'
+        };
 
-        // 节气（简化版，只显示主要节气）
+        // 农历日期名称
+        const lunarDays = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+            '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+            '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+
+        // 2025年节气数据
         const solarTerms = {
-            '2025-02-04': '立春',
+            '2025-01-05': '小寒',
+            '2025-01-20': '大寒',
+            '2025-02-03': '立春',
+            '2025-02-18': '雨水',
             '2025-03-05': '惊蛰',
             '2025-03-20': '春分',
             '2025-04-04': '清明',
+            '2025-04-20': '谷雨',
             '2025-05-05': '立夏',
+            '2025-05-21': '小满',
+            '2025-06-05': '芒种',
             '2025-06-21': '夏至',
+            '2025-07-07': '小暑',
             '2025-07-22': '大暑',
             '2025-08-07': '立秋',
-            '2025-09-22': '秋分',
+            '2025-08-23': '处暑',
+            '2025-09-07': '白露',
+            '2025-09-23': '秋分',
             '2025-10-08': '寒露',
+            '2025-10-23': '霜降',
             '2025-11-07': '立冬',
+            '2025-11-22': '小雪',
+            '2025-12-06': '大雪',
             '2025-12-21': '冬至'
         };
 
@@ -576,51 +608,51 @@
             return null;
         }
 
-        // 获取农历日期（简化版）
+        // 获取农历日期
         function getLunarDate(date) {
             try {
+                const year = date.getFullYear();
+                if (year !== 2025) {
+                    return ''; // 只处理2025年
+                }
+
                 const month = date.getMonth() + 1;
                 const day = date.getDate();
                 const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                const monthDayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
-                // 检查是否是节气
+                // 先检查是否是节气
                 if (solarTerms[dateStr]) {
                     return solarTerms[dateStr];
                 }
 
-                // 检查是否是固定节日
-                if (fixedFestivals[monthDayStr]) {
-                    return fixedFestivals[monthDayStr];
+                // 计算农历月份和日期
+                const monthDayStr = `${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
+                let lunarMonth = '';
+                let dayCount = 0;
+
+                // 找到对应的农历月
+                const monthEntries = Object.entries(lunarMonths2025);
+                for (let i = 0; i < monthEntries.length; i++) {
+                    const [currentMonthDay, monthName] = monthEntries[i];
+                    const nextMonthDay = monthEntries[i + 1] ? monthEntries[i + 1][0] : '1231';
+                    
+                    if (monthDayStr >= currentMonthDay && monthDayStr < nextMonthDay) {
+                        lunarMonth = monthName;
+                        // 计算日期差
+                        const currentDate = new Date(2025, month - 1, day);
+                        const monthStartDate = new Date(2025, 
+                            parseInt(currentMonthDay.substring(0, 2)) - 1,
+                            parseInt(currentMonthDay.substring(2, 4)));
+                        dayCount = Math.floor((currentDate - monthStartDate) / (24 * 60 * 60 * 1000));
+                        break;
+                    }
                 }
 
-                // 检查是否是浮动节日
-                const floatingFestival = getFloatingFestival(date);
-                if (floatingFestival) {
-                    return floatingFestival;
+                if (lunarMonth && dayCount >= 0 && dayCount < lunarDays.length) {
+                    return lunarMonth + lunarDays[dayCount];
                 }
 
-                // 使用简单的偏移计算农历日期（这是个粗略的计算，仅作展示用）
-                // 以2025年春节（1月29日）为基准
-                const baseDate = new Date(2025, 0, 29); // 2025年春节
-                const diffDays = Math.floor((date - baseDate) / (24 * 60 * 60 * 1000));
-                
-                if (diffDays === 0) {
-                    return '春节';
-                }
-
-                // 简单的农历月份计算（粗略计算，实际应该使用农历历表）
-                let lunarMonth = Math.floor((diffDays + 12) / 30) % 12;
-                let lunarDay = (diffDays + 12) % 30;
-
-                if (lunarMonth < 0) {
-                    lunarMonth += 12;
-                }
-                if (lunarDay < 0) {
-                    lunarDay += 30;
-                }
-
-                return lunarMonths[lunarMonth] + '月' + lunarDays[lunarDay];
+                return '';
             } catch (e) {
                 console.error('农历转换错误:', e);
                 return '';
@@ -632,12 +664,6 @@
             const month = date.getMonth() + 1;
             const day = date.getDate();
             const monthDayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-            const dateStr = `${date.getFullYear()}-${monthDayStr}`;
-
-            // 检查是否是节气
-            if (solarTerms[dateStr]) {
-                return solarTerms[dateStr];
-            }
 
             // 检查是否是固定节日
             if (fixedFestivals[monthDayStr]) {
@@ -693,12 +719,14 @@
                 dateNumber.textContent = date;
                 dayElement.appendChild(dateNumber);
 
-                // 农历日期
-                const lunarDate = getLunarDate(currentDate);
-                const lunarElement = document.createElement('div');
-                lunarElement.className = 'lunar-date';
-                lunarElement.textContent = lunarDate;
-                dayElement.appendChild(lunarElement);
+                // 节气
+                const solarTerm = getLunarDate(currentDate);
+                if (solarTerm) {
+                    const lunarElement = document.createElement('div');
+                    lunarElement.className = 'lunar-date';
+                    lunarElement.textContent = solarTerm;
+                    dayElement.appendChild(lunarElement);
+                }
 
                 // 工作状态
                 const workStatus = getWorkStatus(currentDate);
