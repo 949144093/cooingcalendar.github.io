@@ -1,935 +1,163 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>上班日历</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闻枫是傻杯</title>
     <style>
-        * {
+        body {
+            /* 使用本地图片并设置为平铺 */
+            background-image: url('wenfeng.png');
+            background-repeat: repeat;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow-x: hidden;
-            position: fixed;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            color: #fff;
-            padding: 10px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .calendar-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            overflow: hidden;
-        }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            position: relative; /* 为绝对定位的箭头提供容器 */
         }
 
-        .nav-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            transition: background-color 0.3s;
-        }
-
-        .nav-btn svg {
-            fill: #fff;
-        }
-
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .date-selector {
-            display: flex;
-            gap: 10px;
-        }
-
-        select {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 16px;
-            cursor: pointer;
-            outline: none;
-        }
-
-        select option {
-            background: #2d2d2d;
-        }
-
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
+        .container {
             text-align: center;
-            margin-bottom: 10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .flashing-text {
+            font-size: 10vw;
+            color: white;
             font-weight: bold;
+            text-shadow: 
+                0 0 10px #fff, 
+                0 0 20px #fff, 
+                0 0 30px #ff00de, 
+                0 0 40px #ff00de, 
+                0 0 50px #ff00de, 
+                0 0 60px #ff00de, 
+                0 0 70px #ff00de;
+            animation: flash 2s infinite ease-in-out;
         }
 
-        .weekdays div {
-            padding: 10px;
+        @keyframes flash {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.2;
+                transform: scale(1.05);
+            }
         }
 
-        .days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-        }
-
-        .day {
-            aspect-ratio: 1;
+        .surprise-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
             align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            position: relative;
-            transition: transform 0.3s, background-color 0.3s;
-            padding: 5px 2px;
-            min-height: 90px;
-            gap: 2px;
-        }
-
-        .day:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .day.today {
-            border: 2px solid #4CAF50;
-        }
-
-        .day .date {
-            font-size: 1.1em;
-            font-weight: 500;
-            margin-top: 2px;
-        }
-
-        .day .lunar-date {
-            font-size: 0.7em;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .day .shift {
-            font-size: 0.8em;
-            color: rgba(255, 255, 255, 0.7);
-            margin: 2px 0;
-        }
-
-        .day.day-shift {
-            background: rgba(33, 150, 243, 0.2);
-        }
-
-        .day.night-shift {
-            background: rgba(156, 39, 176, 0.2);
-        }
-
-        .day.rest-day {
-            background: rgba(244, 67, 54, 0.2);
-        }
-
-        .day.holiday {
-            background: rgba(255, 193, 7, 0.2) !important;
-        }
-
-        .day .festival {
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.65em;
-            color: #FF9800;
-            white-space: nowrap;
-            text-align: center;
-            width: 100%;
-            padding: 0 2px;
-            font-weight: 500;
-        }
-
-        .day .holiday-name {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.65em;
-            color: #FFC107;
-            white-space: nowrap;
-            text-align: center;
-            width: 100%;
-            padding: 0 2px;
-            font-weight: 500;
-        }
-
-        .day .triple-pay {
-            position: absolute;
-            top: 1px;
-            right: 1px;
-            font-size: 0.75em;
-            color: #FFC107;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1px 3px;
-            border-radius: 3px;
-        }
-
-        .legend {
-            display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 15px;
+            z-index: 20;
         }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        #playButton {
+            font-size: 24px;
+            padding: 15px 30px;
+            cursor: pointer;
+            border: 3px solid #ff00de;
+            background-color: #fff;
+            color: #ff00de;
+            font-weight: bold;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            animation: pulse-button 1.5s infinite;
         }
 
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
+        #playButton:hover {
+            background-color: #ff00de;
+            color: #fff;
         }
 
-        .legend-color.day-shift {
-            background: rgba(33, 150, 243, 0.2);
+        .arrow {
+            font-size: 40px;
+            color: yellow;
+            position: absolute;
+            animation: blink-arrow 1s infinite;
         }
 
-        .legend-color.night-shift {
-            background: rgba(156, 39, 176, 0.2);
+        @keyframes blink-arrow {
+            50% { opacity: 0; }
+        }
+        
+        @keyframes pulse-button {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 20, 147, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 20, 147, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 20, 147, 0); }
         }
 
-        .legend-color.rest-day {
-            background: rgba(244, 67, 54, 0.2);
-        }
-
-        .legend-color.today {
-            background: transparent;
-            border: 2px solid #4CAF50;
-        }
-
-        .legend-color.holiday {
-            background: rgba(255, 193, 7, 0.2);
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 5px;
-                height: 100%;
-                width: 100vw;
-            }
-
-            .calendar-container {
-                padding: 8px;
-                border-radius: 15px;
-                height: auto;
-                min-height: calc(100vh - 10px);
-            }
-
-            .calendar-header {
-                margin-bottom: 10px;
-            }
-
-            .date-selector {
-                gap: 5px;
-            }
-
-            .days {
-                gap: 2px;
-            }
-
-            .day {
-                min-height: 45px;
-                padding: 1px;
-                font-size: 0.85em;
-                height: calc((100vw - 30px) / 7);
-                max-height: 80px;
-            }
-
-            .day .date {
-                font-size: 0.85em;
-                margin-top: 1px;
-            }
-
-            .day .lunar-date {
-                font-size: 0.55em;
-                margin: 0;
-            }
-
-            .day .shift {
-                font-size: 0.65em;
-                margin: 0;
-            }
-
-            .day .festival {
-                font-size: 0.5em;
-                bottom: 1px;
-            }
-            
-            .day .holiday-name {
-                bottom: 12px;
-                font-size: 0.5em;
-            }
-
-            .day .triple-pay {
-                font-size: 0.55em;
-                padding: 0 1px;
-                top: 1px;
-                right: 1px;
-            }
-
-            .weekdays div {
-                font-size: 0.75em;
-                padding: 3px 1px;
-            }
-
-            select {
-                font-size: 0.8em !important;
-                padding: 4px 8px !important;
-            }
-
-            .nav-btn {
-                padding: 4px;
-            }
-
-            .nav-btn svg {
-                width: 18px;
-                height: 18px;
-            }
-
-            .legend {
-                gap: 8px;
-                margin-top: 10px;
-                font-size: 0.75em;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .legend-item {
-                gap: 4px;
-            }
-
-            .legend-color {
-                width: 12px;
-                height: 12px;
-            }
-        }
-
-        @media (max-width: 400px) {
-            body {
-                padding: 3px;
-            }
-
-            .calendar-container {
-                padding: 5px;
-                border-radius: 10px;
-            }
-
-            .day {
-                min-height: 40px;
-                height: calc((100vw - 20px) / 7);
-                max-height: 60px;
-            }
-
-            .day .date {
-                font-size: 0.8em;
-            }
-
-            .day .lunar-date {
-                font-size: 0.45em;
-            }
-
-            .day .shift {
-                font-size: 0.55em;
-            }
-
-            .day .festival,
-            .day .holiday-name {
-                font-size: 0.45em;
-            }
-
-            .legend {
-                gap: 6px;
-                font-size: 0.7em;
-            }
-
-            .legend-color {
-                width: 10px;
-                height: 10px;
-            }
-        }
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            .calendar-container {
-                height: auto;
-                max-height: calc(100vh - 10px);
-                overflow-y: auto;
-            }
-
-            .day {
-                min-height: 35px;
-                height: calc((100vh - 120px) / 6);
-                max-height: 50px;
-            }
-        }
-
-        /* 添加 iOS Safari 的特殊处理 */
-        @supports (-webkit-touch-callout: none) {
-            body {
-                min-height: -webkit-fill-available;
-            }
-        }
     </style>
 </head>
-
 <body>
-    <script src="https://cdn.jsdelivr.net/gh/sxei/js-calendar/calendar.js"></script>
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <button id="prevMonth" class="nav-btn">
-                <svg viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-                </svg>
-            </button>
-            <div class="date-selector">
-                <select id="yearSelect"></select>
-                <select id="monthSelect">
-                    <option value="0">1月</option>
-                    <option value="1">2月</option>
-                    <option value="2">3月</option>
-                    <option value="3">4月</option>
-                    <option value="4">5月</option>
-                    <option value="5">6月</option>
-                    <option value="6">7月</option>
-                    <option value="7">8月</option>
-                    <option value="8">9月</option>
-                    <option value="9">10月</option>
-                    <option value="10">11月</option>
-                    <option value="11">12月</option>
-                </select>
-            </div>
-            <button id="nextMonth" class="nav-btn">
-                <svg viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-                </svg>
-            </button>
-        </div>
-        <div class="calendar-body">
-            <div class="weekdays">
-                <div>日</div>
-                <div>一</div>
-                <div>二</div>
-                <div>三</div>
-                <div>四</div>
-                <div>五</div>
-                <div>六</div>
-            </div>
-            <div class="days" id="daysContainer"></div>
-        </div>
-        <div class="legend">
-            <div class="legend-item">
-                <span class="legend-color day-shift"></span>
-                <span>白班</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color night-shift"></span>
-                <span>夜班</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color rest-day"></span>
-                <span>休息</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color holiday"></span>
-                <span>节假日</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color today"></span>
-                <span>今天</span>
-            </div>
-        </div>
+    <div class="container">
+        <h1 class="flashing-text">闻枫是傻杯</h1>
     </div>
-    <script>
-        // 基准日期：2025年5月16日是上班的第一天
-        const baseDate = new Date(2025, 4, 16); // 月份从0开始，所以5月是4
 
-        // 2025年法定节假日数据
-        const holidays2025 = {
-            // 元旦：1天假期
-            '2025-01-01': '元旦',
-            
-            // 春节：7天假期
-            '2025-01-28': '除夕',
-            '2025-01-29': '春节',
-            '2025-01-30': '春节',
-            '2025-01-31': '春节',
-            '2025-02-01': '春节',
-            '2025-02-02': '春节',
-            '2025-02-03': '春节',
-            '2025-02-04': '春节',
-            
-            // 清明节：3天假期
-            '2025-04-04': '清明节',
-            '2025-04-05': '清明节',
-            '2025-04-06': '清明节',
-            
-            // 劳动节：5天假期
-            '2025-05-01': '劳动节',
-            '2025-05-02': '劳动节',
-            '2025-05-03': '劳动节',
-            '2025-05-04': '劳动节',
-            '2025-05-05': '劳动节',
-            
-            // 端午节：3天假期
-            '2025-05-31': '端午节',
-            '2025-06-01': '端午节',
-            '2025-06-02': '端午节',
-            
-            // 国庆节：8天假期
-            '2025-10-01': '国庆节',
-            '2025-10-02': '国庆节',
-            '2025-10-03': '国庆节',
-            '2025-10-04': '国庆节',
-            '2025-10-05': '国庆节',
-            '2025-10-06': '国庆节',
-            '2025-10-07': '国庆节',
-            '2025-10-08': '国庆节',
-        };
-
-        // 三倍工资的日期
-        const triplePay2025 = [
-            '2025-01-01',  // 元旦
-            '2025-01-28',  // 除夕
-            '2025-01-29',  // 春节
-            '2025-01-30',  // 春节
-            '2025-01-31',  // 春节
-            '2025-04-04',  // 清明节
-            '2025-05-01',  // 劳动节
-            '2025-05-02',  // 劳动节
-            '2025-05-31',  // 端午节
-            '2025-10-01',  // 国庆节
-            '2025-10-02',  // 国庆节
-            '2025-10-03',  // 国庆节
-            '2025-10-06',  // 国庆节
-        ];
-
-        // 2025年农历数据（月份数据，对应每月初一的公历日期）
-        const lunarMonths2025 = {
-            '0129': '正月',  // 春节
-            '0227': '二月',
-            '0329': '三月',
-            '0428': '四月',  // 四月初一
-            '0527': '五月',
-            '0626': '六月',
-            '0725': '七月',
-            '0824': '八月',
-            '0922': '九月',
-            '1022': '十月',
-            '1120': '冬月',
-            '1220': '腊月'
-        };
-
-        // 农历日期名称
-        const lunarDays = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
-            '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
-            '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
-
-        // 2025年节气数据
-        const solarTerms = {
-            '2025-01-05': '小寒',
-            '2025-01-20': '大寒',
-            '2025-02-03': '立春',
-            '2025-02-18': '雨水',
-            '2025-03-05': '惊蛰',
-            '2025-03-20': '春分',
-            '2025-04-04': '清明',
-            '2025-04-20': '谷雨',
-            '2025-05-05': '立夏',
-            '2025-05-21': '小满',
-            '2025-06-05': '芒种',
-            '2025-06-21': '夏至',
-            '2025-07-07': '小暑',
-            '2025-07-22': '大暑',
-            '2025-08-07': '立秋',
-            '2025-08-23': '处暑',
-            '2025-09-07': '白露',
-            '2025-09-23': '秋分',
-            '2025-10-08': '寒露',
-            '2025-10-23': '霜降',
-            '2025-11-07': '立冬',
-            '2025-11-22': '小雪',
-            '2025-12-06': '大雪',
-            '2025-12-21': '冬至'
-        };
-
-        // 固定日期的节日
-        const fixedFestivals = {
-            '01-01': '元旦',
-            '02-14': '情人节',
-            '03-08': '妇女节',
-            '03-12': '植树节',
-            '04-01': '愚人节',
-            '05-01': '劳动节',
-            '05-04': '青年节',
-            '06-01': '儿童节',
-            '07-01': '建党节',
-            '08-01': '建军节',
-            '09-10': '教师节',
-            '10-01': '国庆节',
-            '12-24': '平安夜',
-            '12-25': '圣诞节'
-        };
-
-        // 获取工作状态
-        function getWorkStatus(date) {
-            // 计算与基准日期相差的天数
-            const diffDays = Math.floor((date - baseDate) / (24 * 60 * 60 * 1000));
-
-            // 每6天一个循环
-            const cycleDay = ((diffDays % 6) + 6) % 6;
-
-            if (cycleDay < 4) {
-                // 上班日
-                if (cycleDay < 2) {
-                    return '白班';
-                } else {
-                    return '夜班';
-                }
-            } else {
-                // 休息日
-                return '休息';
-            }
-        }
-
-        // 判断是否是节假日并返回节日名称
-        function getHolidayName(date) {
-            // 注意：JavaScript的月份是从0开始的，所以需要+1
-            const month = date.getMonth() + 1;
-            const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-            return holidays2025[dateStr] || null;
-        }
-
-        // 判断是否是三倍工资日期
-        function isTriplePayDay(date) {
-            const month = date.getMonth() + 1;
-            const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-            return triplePay2025.includes(dateStr);
-        }
-
-        // 判断是否是三倍工资
-        function isTriplePay(date) {
-            const workStatus = getWorkStatus(date);
-            // 只有在三倍工资日期内且是工作日才显示三倍工资标记
-            return isTriplePayDay(date) && (workStatus === '白班' || workStatus === '夜班');
-        }
-
-        // 获取特定月份第n个星期几的日期
-        function getNthWeekday(year, month, weekday, nth) {
-            let date = new Date(year, month, 1);
-            let count = 0;
-            
-            // 找到第n个对应的星期几
-            while (count < nth) {
-                if (date.getDay() === weekday) {
-                    count++;
-                }
-                if (count < nth) {
-                    date.setDate(date.getDate() + 1);
-                }
-            }
-            return date;
-        }
-
-        // 获取浮动节日
-        function getFloatingFestival(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const day = date.getDate();
-            
-            // 母亲节：5月第二个星期日
-            const motherDay = getNthWeekday(year, 4, 0, 2);
-            if (month === 4 && day === motherDay.getDate()) {
-                return '母亲节';
-            }
-            
-            // 父亲节：6月第三个星期日
-            const fatherDay = getNthWeekday(year, 5, 0, 3);
-            if (month === 5 && day === fatherDay.getDate()) {
-                return '父亲节';
-            }
-            
-            // 感恩节：11月第四个星期四
-            const thanksgiving = getNthWeekday(year, 10, 4, 4);
-            if (month === 10 && day === thanksgiving.getDate()) {
-                return '感恩节';
-            }
-
-            return null;
-        }
-
-        // 获取农历日期
-        function getLunarDate(date) {
-            try {
-                const year = date.getFullYear();
-                if (year !== 2025) {
-                    return ''; // 只处理2025年
-                }
-
-                const month = date.getMonth() + 1;
-                const day = date.getDate();
-                const dateStr = `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-
-                // 先检查是否是节气
-                if (solarTerms[dateStr]) {
-                    return solarTerms[dateStr];
-                }
-
-                // 计算农历月份和日期
-                const monthDayStr = `${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
-                let lunarMonth = '';
-                let dayCount = 0;
-
-                // 找到对应的农历月
-                const monthEntries = Object.entries(lunarMonths2025);
-                for (let i = 0; i < monthEntries.length; i++) {
-                    const [currentMonthDay, monthName] = monthEntries[i];
-                    const nextMonthDay = monthEntries[i + 1] ? monthEntries[i + 1][0] : '1231';
-                    
-                    if (monthDayStr >= currentMonthDay && monthDayStr < nextMonthDay) {
-                        lunarMonth = monthName;
-                        // 计算日期差
-                        const currentDate = new Date(2025, month - 1, day);
-                        const monthStartDate = new Date(2025, 
-                            parseInt(currentMonthDay.substring(0, 2)) - 1,
-                            parseInt(currentMonthDay.substring(2, 4)));
-                        dayCount = Math.floor((currentDate - monthStartDate) / (24 * 60 * 60 * 1000));
-                        break;
-                    }
-                }
-
-                if (lunarMonth && dayCount >= 0 && dayCount < lunarDays.length) {
-                    return lunarMonth + lunarDays[dayCount];
-                }
-
-                return '';
-            } catch (e) {
-                console.error('农历转换错误:', e);
-                return '';
-            }
-        }
-
-        // 获取节日名称
-        function getFestivalName(date) {
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const monthDayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-
-            // 检查是否是固定节日
-            if (fixedFestivals[monthDayStr]) {
-                return fixedFestivals[monthDayStr];
-            }
-
-            // 检查是否是浮动节日
-            return getFloatingFestival(date);
-        }
-
-        // 初始化年份选择器
-        function initYearSelect() {
-            const yearSelect = document.getElementById('yearSelect');
-            const currentYear = new Date().getFullYear();
-
-            // 前后5年
-            for (let year = currentYear - 5; year <= currentYear + 5; year++) {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year + '年';
-                yearSelect.appendChild(option);
-            }
-
-            yearSelect.value = currentYear;
-        }
-
-        // 渲染日历
-        function renderCalendar(year, month) {
-            const daysContainer = document.getElementById('daysContainer');
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const today = new Date();
-
-            // 清空容器
-            daysContainer.innerHTML = '';
-
-            // 添加月初的空白天数
-            for (let i = 0; i < firstDay.getDay(); i++) {
-                const emptyDay = document.createElement('div');
-                emptyDay.className = 'day empty';
-                daysContainer.appendChild(emptyDay);
-            }
-
-            // 添加日期
-            for (let date = 1; date <= lastDay.getDate(); date++) {
-                const currentDate = new Date(year, month, date);
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day';
-
-                // 日期数字
-                const dateNumber = document.createElement('div');
-                dateNumber.className = 'date';
-                dateNumber.textContent = date;
-                dayElement.appendChild(dateNumber);
-
-                // 节气
-                const solarTerm = getLunarDate(currentDate);
-                if (solarTerm) {
-                    const lunarElement = document.createElement('div');
-                    lunarElement.className = 'lunar-date';
-                    lunarElement.textContent = solarTerm;
-                    dayElement.appendChild(lunarElement);
-                }
-
-                // 工作状态
-                const workStatus = getWorkStatus(currentDate);
-                const shiftElement = document.createElement('div');
-                shiftElement.className = 'shift';
-                shiftElement.textContent = workStatus;
-                dayElement.appendChild(shiftElement);
-
-                // 添加对应的类
-                if (workStatus === '白班') {
-                    dayElement.classList.add('day-shift');
-                } else if (workStatus === '夜班') {
-                    dayElement.classList.add('night-shift');
-                } else {
-                    dayElement.classList.add('rest-day');
-                }
-
-                // 标记今天
-                if (currentDate.getDate() === today.getDate() &&
-                    currentDate.getMonth() === today.getMonth() &&
-                    currentDate.getFullYear() === today.getFullYear()) {
-                    dayElement.classList.add('today');
-                }
-
-                // 获取节假日名称
-                const holidayName = getHolidayName(currentDate);
+    <div class="surprise-container" id="surprise">
+        <button id="playButton">点击这里有惊喜</button>
+        <!-- 自动生成箭头 -->
+        <script>
+            const surpriseBox = document.getElementById('surprise');
+            const button = document.getElementById('playButton');
+            const arrowCount = 20;
+            for (let i = 0; i < arrowCount; i++) {
+                const arrow = document.createElement('div');
+                arrow.classList.add('arrow');
+                arrow.innerHTML = ['&rarr;', '&darr;', '&larr;', '&uarr;', '&searr;', '&swarr;', '&nearr;', '&nwarr;'][Math.floor(Math.random() * 8)];
                 
-                // 标记节假日和显示节日名称
-                if (holidayName) {
-                    dayElement.classList.add('holiday');
-                    const holidayElement = document.createElement('div');
-                    holidayElement.className = 'holiday-name';
-                    holidayElement.textContent = holidayName;
-                    dayElement.appendChild(holidayElement);
-                }
+                // 在按钮周围随机分布
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 120 + Math.random() * 80;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
 
-                // 获取并显示节日
-                const festivalName = getFestivalName(currentDate);
-                if (festivalName && !holidayName) {  // 如果不是法定节假日才显示普通节日
-                    const festivalElement = document.createElement('div');
-                    festivalElement.className = 'festival';
-                    festivalElement.textContent = festivalName;
-                    dayElement.appendChild(festivalElement);
-                }
+                arrow.style.left = `calc(50% + ${x}px)`;
+                arrow.style.top = `calc(50% + ${y}px)`;
+                arrow.style.transform = `translate(-50%, -50%) rotate(${angle + Math.PI}rad)`; // 指向中心
+                arrow.style.animationDelay = `${Math.random()}s`;
 
-                // 标记三倍工资
-                if (isTriplePay(currentDate)) {
-                    const triplePayElement = document.createElement('div');
-                    triplePayElement.className = 'triple-pay';
-                    triplePayElement.textContent = '3x';
-                    dayElement.appendChild(triplePayElement);
-                }
-
-                daysContainer.appendChild(dayElement);
+                surpriseBox.appendChild(arrow);
             }
-        }
+        </script>
+    </div>
 
-        // 更新日历
-        function updateCalendar() {
-            const year = parseInt(document.getElementById('yearSelect').value);
-            const month = parseInt(document.getElementById('monthSelect').value);
-            renderCalendar(year, month);
-        }
+    <script>
+        document.getElementById('playButton').addEventListener('click', function() {
+            // 隐藏惊喜容器
+            document.getElementById('surprise').style.display = 'none';
 
-        // 初始化
-        function init() {
-            initYearSelect();
+            const textToSpeak = '闻枫是傻杯';
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
 
-            // 设置当前月份
-            const currentDate = new Date();
-            document.getElementById('monthSelect').value = currentDate.getMonth();
+            function speak() {
+                window.speechSynthesis.speak(utterance);
+            }
 
-            // 渲染日历
-            updateCalendar();
+            utterance.onend = function() {
+                // 使用一个小的随机延迟来避免过于机械的循环
+                setTimeout(speak, Math.random() * 500 + 200);
+            };
 
-            // 添加事件监听器
-            document.getElementById('yearSelect').addEventListener('change', updateCalendar);
-            document.getElementById('monthSelect').addEventListener('change', updateCalendar);
-
-            // 上一月按钮
-            document.getElementById('prevMonth').addEventListener('click', () => {
-                let year = parseInt(document.getElementById('yearSelect').value);
-                let month = parseInt(document.getElementById('monthSelect').value);
-
-                month--;
-                if (month < 0) {
-                    month = 11;
-                    year--;
-                    document.getElementById('yearSelect').value = year;
-                }
-                document.getElementById('monthSelect').value = month;
-                updateCalendar();
-            });
-
-            // 下一月按钮
-            document.getElementById('nextMonth').addEventListener('click', () => {
-                let year = parseInt(document.getElementById('yearSelect').value);
-                let month = parseInt(document.getElementById('monthSelect').value);
-
-                month++;
-                if (month > 11) {
-                    month = 0;
-                    year++;
-                    document.getElementById('yearSelect').value = year;
-                }
-                document.getElementById('monthSelect').value = month;
-                updateCalendar();
-            });
-        }
-
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', init); 
+            speak(); // 第一次播放
+        });
     </script>
 </body>
-
 </html>
