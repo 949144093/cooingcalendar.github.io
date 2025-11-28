@@ -92,17 +92,18 @@
                     </div>
 
                     <div class="lottery-display" id="lotteryDisplay">
-                        <div class="wheel-container">
-                            <!-- 重新实现的转盘：Canvas 绘制扇形，外层容器整体旋转 -->
-                            <div class="wheel-graphic" id="wheelGraphic">
-                                <canvas id="wheelCanvas" width="400" height="400"></canvas>
+                        <!-- 全屏名字滚动效果，不再使用转盘 -->
+                        <div class="name-roller">
+                            <div class="name-roller-subtitle">
+                                当前可抽奖人数：<span id="rollerCount">0</span> 人
                             </div>
-                            <!-- 中心指南针指针 -->
-                            <div class="wheel-pointer" id="wheelPointer"></div>
-                            <!-- 中心圆形装饰 -->
-                            <div class="wheel-center"></div>
-                            <!-- 上方状态文字 -->
-                            <div class="wheel-text" id="wheelText">等待抽奖</div>
+                            <div class="name-roller-box">
+                                <div class="name-roller-label">本轮幸运嘉宾</div>
+                                <div class="name-roller-main" id="wheelText">等待抽奖</div>
+                            </div>
+                            <div class="name-roller-tip">
+                                点击「开始抽奖」后，将在所有可抽奖人员中随机滚动姓名，最终停留即为中奖人
+                            </div>
                         </div>
                     </div>
 
@@ -111,7 +112,10 @@
                         <div class="results-list" id="resultsList">
                             <div class="empty-results">暂无中奖记录</div>
                         </div>
-                        <button id="clearResultsBtn" class="clear-btn" style="display: none;">清空中奖记录</button>
+                        <div class="results-actions">
+                            <button id="copyResultsBtn" class="copy-btn" style="display: none;">复制中奖结果</button>
+                            <button id="clearResultsBtn" class="clear-btn" style="display: none;">清空中奖记录</button>
+                        </div>
                     </div>
                 </div>
             </div>

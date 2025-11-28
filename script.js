@@ -15,13 +15,11 @@ const drawnCountSpan = document.getElementById('drawnCount');
 const drawCountInput = document.getElementById('drawCount');
 const drawBtn = document.getElementById('drawBtn');
 const resetBtn = document.getElementById('resetBtn');
-const wheelGraphic = document.getElementById('wheelGraphic');
-const wheelCanvas = document.getElementById('wheelCanvas');
-const wheelCtx = wheelCanvas.getContext('2d');
+// 现在只保留中心文字区域用于名字滚动展示
 const wheelText = document.getElementById('wheelText');
-const wheelPointer = document.getElementById('wheelPointer');
 const resultsList = document.getElementById('resultsList');
 const clearResultsBtn = document.getElementById('clearResultsBtn');
+const copyResultsBtn = document.getElementById('copyResultsBtn');
 const editModal = document.getElementById('editModal');
 const closeModal = document.getElementById('closeModal');
 const editNameInput = document.getElementById('editName');
@@ -112,8 +110,8 @@ function handleFileUpload(event) {
             updateDrawCount();
             drawBtn.disabled = false;
             
-            // 绘制转盘
-            drawWheel();
+            // 更新名字滚动区域提示
+            updateRollerText();
             
             alert(`成功导入 ${nameList.length} 条数据！`);
         } catch (error) {
@@ -216,7 +214,7 @@ function deleteItem(id) {
     updateTable();
     updateStats();
     updateDrawCount();
-    drawWheel();
+    updateRollerText();
 }
 
 // 保存编辑
@@ -250,7 +248,7 @@ saveEditBtn.addEventListener('click', function() {
         updateTable();
         updateStats();
         updateDrawCount();
-        drawWheel();
+        updateRollerText();
     }
     
     editModal.style.display = 'none';
@@ -275,68 +273,32 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// 当前转盘旋转角度（度）
-let wheelRotation = 0;
+// 名字滚动动画计时句柄（可能来自 setTimeout 或 requestAnimationFrame）
+let nameRollingTimer = null;
 
-// 绘制转盘（使用 Canvas，实现扇形和名字沿扇形半径排布）
-function drawWheel() {
+// 根据当前可抽奖人数，更新中心提示文字和人数统计
+function updateRollerText() {
     const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
 
-    // 重置旋转角度展示
-    wheelRotation = 0;
-    if (wheelGraphic) {
-        wheelGraphic.style.transform = 'rotate(0deg)';
+    // 重置名字滚动
+    if (nameRollingTimer) {
+        clearTimeout(nameRollingTimer);
+        cancelAnimationFrame(nameRollingTimer);
+        nameRollingTimer = null;
     }
-
-    const size = wheelCanvas.width;
-    const cx = size / 2;
-    const cy = size / 2;
-    const radius = size / 2 - 12; // 预留边框
-
-    // 清空画布
-    wheelCtx.clearRect(0, 0, size, size);
 
     if (eligibleList.length === 0) {
         wheelText.textContent = '等待抽奖';
         return;
     }
 
-    const anglePerSegment = (Math.PI * 2) / eligibleList.length;
-
-    eligibleList.forEach((item, index) => {
-        const startAngle = index * anglePerSegment;
-        const endAngle = startAngle + anglePerSegment;
-
-        // 扇形背景
-        wheelCtx.beginPath();
-        wheelCtx.moveTo(cx, cy);
-        wheelCtx.arc(cx, cy, radius, startAngle, endAngle, false);
-        wheelCtx.closePath();
-        const hue = (index * 137.5) % 360;
-        wheelCtx.fillStyle = `hsl(${hue}, 70%, 60%)`;
-        wheelCtx.fill();
-
-        // 扇形边框
-        wheelCtx.strokeStyle = '#ffffff';
-        wheelCtx.lineWidth = 2;
-        wheelCtx.stroke();
-
-        // 名字（沿扇形半径显示）
-        const midAngle = startAngle + anglePerSegment / 2;
-        const textRadius = radius * 0.7;
-
-        wheelCtx.save();
-        wheelCtx.translate(cx, cy);
-        wheelCtx.rotate(midAngle);
-        wheelCtx.textAlign = 'center';
-        wheelCtx.textBaseline = 'middle';
-        wheelCtx.fillStyle = '#ffffff';
-        wheelCtx.font = 'bold 16px "Microsoft YaHei", "Segoe UI", sans-serif';
-        wheelCtx.fillText(item.name, textRadius, 0);
-        wheelCtx.restore();
-    });
-
     wheelText.textContent = `共${eligibleList.length}人`;
+
+    // 同步右侧副标题显示人数
+    const rollerCountSpan = document.getElementById('rollerCount');
+    if (rollerCountSpan) {
+        rollerCountSpan.textContent = eligibleList.length;
+    }
 }
 
 // 抽奖功能
@@ -344,6 +306,54 @@ drawBtn.addEventListener('click', startLottery);
 
 let currentDrawIndex = 0;
 let drawQueue = [];
+
+// 中心名字滚动（业界常用方案）：
+// 大部分抽奖工具都是中间一个大名字，快速随机切换 -> 逐渐减速 -> 停在中奖人
+function startNameRolling(winner, eligibleList, onFinish) {
+    // 清理旧动画
+    if (nameRollingTimer) {
+        clearTimeout(nameRollingTimer);
+        cancelAnimationFrame(nameRollingTimer);
+        nameRollingTimer = null;
+    }
+
+    if (!eligibleList || eligibleList.length === 0) return;
+
+    const names = eligibleList.map(item => item.name);
+    const winnerName = winner.name;
+
+    // 使用“随机姓名闪烁 + 逐渐减速”的方式，让中间大字依次显示不同人名
+    const totalSteps = 45;          // 总共切换次数
+    const minDelay = 40;           // 最开始的间隔（毫秒）
+    const maxDelay = 380;          // 最后一次切换前的间隔（毫秒）
+
+    let step = 0;
+
+    const tick = () => {
+        if (step >= totalSteps) {
+            // 最终停在真实中奖人
+            wheelText.textContent = winnerName;
+            nameRollingTimer = null;
+            if (typeof onFinish === 'function') {
+                onFinish();
+            }
+            return;
+        }
+
+        // 中间过程随机展示任意一个可抽奖人
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        wheelText.textContent = randomName;
+
+        // 逐渐放慢：开始快、后面慢（使用二次缓出）
+        const t = step / (totalSteps - 1); // 0 ~ 1
+        const delay = minDelay + (maxDelay - minDelay) * (t * t);
+
+        step++;
+        nameRollingTimer = setTimeout(tick, delay);
+    };
+
+    tick();
+}
 
 function startLottery() {
     const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
@@ -389,7 +399,7 @@ function performSingleDraw() {
     const winner = drawQueue[currentDrawIndex];
     const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
     
-    // 找到中奖者在转盘上的索引
+    // 找到中奖者在当前可抽奖列表中的位置，确保逻辑一致
     const winnerIndex = eligibleList.findIndex(item => item.id === winner.id);
     
     if (winnerIndex === -1) {
@@ -397,60 +407,33 @@ function performSingleDraw() {
         performSingleDraw();
         return;
     }
-
-    // 计算转盘需要旋转的角度（指针固定在中心，朝上）
-    const anglePerSegment = 360 / eligibleList.length;
-    const segmentCenter = winnerIndex * anglePerSegment + anglePerSegment / 2;
-
-    // 当前转盘角度（0-360 归一化）
-    const normalizedCurrent = ((wheelRotation % 360) + 360) % 360;
-
-    // 多转几圈增加动画效果
-    const extraRotations = 4; // 多转 4 圈
-    // 指针朝上，对应 270°；目标是让中奖扇形的中线最终落在该方向
-    const pointerDirection = 270;
-    const deltaRotation = extraRotations * 360 + (pointerDirection - segmentCenter) - normalizedCurrent;
-    const totalRotation = wheelRotation + deltaRotation;
-    wheelRotation = totalRotation;
-
-    // 设置转盘旋转（使用 CSS transition 实现平滑动画）
-    if (wheelGraphic) {
-        wheelGraphic.style.transform = `rotate(${totalRotation}deg)`;
-    }
-    wheelText.textContent = '抽奖中...';
     
-    // 等待动画完成（与 CSS 中 3.5s 动画时长匹配）
-    setTimeout(() => {
-        // 动画完成
-        wheelText.textContent = winner.name;
-        
-        // 标记为已抽中
+    // 抽奖过程中，让中心文字以「从右往左滑动、逐渐减速」的形式轮流展示姓名
+    startNameRolling(winner, eligibleList, () => {
+        // 动画结束，标记为已抽中
         winner.drawn = true;
         drawnList.push(winner);
-        
+
         // 显示中奖结果
         displaySingleResult(winner);
-        
+
         // 更新界面
         updateTable();
         updateStats();
         updateDrawCount();
-        
-        // 重新绘制转盘（移除已抽中的人）
+
+        // 稍等一下再执行下一轮，给观众一个反应时间
         setTimeout(() => {
-            drawWheel();
-            
-            // 继续下一次抽奖
             currentDrawIndex++;
             if (currentDrawIndex < drawQueue.length) {
                 setTimeout(() => {
                     performSingleDraw();
-                }, 1000);
+                }, 800);
             } else {
                 drawBtn.disabled = nameList.filter(item => item.attendance >= 7 && !item.drawn).length > 0;
             }
-        }, 1500);
-    }, 3500);
+        }, 600);
+    });
 }
 
 function displaySingleResult(winner) {
@@ -465,8 +448,11 @@ function displaySingleResult(winner) {
         emptyResults.remove();
     }
     
-    // 显示清空按钮
+    // 显示操作按钮
     clearResultsBtn.style.display = 'block';
+    if (copyResultsBtn) {
+        copyResultsBtn.style.display = 'block';
+    }
     
     // 滚动到底部
     resultsList.scrollTop = resultsList.scrollHeight;
@@ -480,19 +466,24 @@ resetBtn.addEventListener('click', function() {
     drawnList = [];
     resultsList.innerHTML = '<div class="empty-results">暂无中奖记录</div>';
     clearResultsBtn.style.display = 'none';
-    
-    // 重置转盘和指针
-    wheelRotation = 0;
-    if (wheelGraphic) {
-        wheelGraphic.style.transform = 'rotate(0deg)';
+    if (copyResultsBtn) {
+        copyResultsBtn.style.display = 'none';
     }
+    
+    // 停止名字滚动并恢复提示文字
+    if (nameRollingTimer) {
+        clearTimeout(nameRollingTimer);
+        cancelAnimationFrame(nameRollingTimer);
+        nameRollingTimer = null;
+    }
+    wheelText.textContent = '等待抽奖';
     
     updateTable();
     updateStats();
     // 重置时重新允许自动建议
     drawCountAuto = true;
     updateDrawCount();
-    drawWheel();
+    updateRollerText();
     drawBtn.disabled = nameList.filter(item => item.attendance >= 7).length === 0;
 });
 
@@ -502,7 +493,49 @@ clearResultsBtn.addEventListener('click', function() {
     
     resultsList.innerHTML = '<div class="empty-results">暂无中奖记录</div>';
     clearResultsBtn.style.display = 'none';
+    if (copyResultsBtn) {
+        copyResultsBtn.style.display = 'none';
+    }
 });
+
+// 复制中奖结果
+if (copyResultsBtn) {
+    copyResultsBtn.addEventListener('click', function () {
+        if (drawnList.length === 0) {
+            alert('当前没有可复制的中奖记录！');
+            return;
+        }
+
+        // 按抽取顺序导出：1、姓名（出勤x/8）
+        const lines = drawnList.map((item, index) => {
+            return `${index + 1}、${item.name}（出勤 ${item.attendance}/8）`;
+        });
+
+        const text = `🎊 抽奖结果：\n` + lines.join('\n');
+
+        // 使用 Clipboard API 复制到剪贴板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('中奖结果已复制到剪贴板，可直接粘贴发送。');
+            }).catch(() => {
+                alert('复制失败，请检查浏览器权限或手动选择文本复制。');
+            });
+        } else {
+            // 兼容性兜底：创建临时 textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('中奖结果已复制到剪贴板，可直接粘贴发送。');
+            } catch (e) {
+                alert('复制失败，请手动选择中奖结果进行复制。');
+            }
+            document.body.removeChild(textarea);
+        }
+    });
+}
 
 // 抽奖数量输入变化时更新
 drawCountInput.addEventListener('input', function() {

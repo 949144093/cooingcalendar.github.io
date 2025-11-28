@@ -31,7 +31,7 @@ header h1 {
 
 .main-content {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 0.75fr 1.25fr; /* 右侧抽奖区域更大，左侧管理区稍小 */
     gap: 30px;
     margin-bottom: 20px;
 }
@@ -357,113 +357,90 @@ tbody tr.ineligible {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 400px;
+    min-height: 280px;
 }
 
-.wheel-container {
-    position: relative;
-    width: 400px;
-    height: 400px;
-}
-
-.wheel-graphic {
-    position: absolute;
-    top: 0;
-    left: 0;
+/* 名字滚动展示区域（替代转盘，更简洁大气） */
+.name-roller {
     width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    border: 8px solid white;
-    overflow: hidden;
-    transform: rotate(0deg);
-    /* 让整个转盘可以平滑旋转（前期快、后期明显减速） */
-    transition: transform 3.5s cubic-bezier(0.15, 0.85, 0.15, 1);
-}
-
-#wheelCanvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.wheel-center {
-    position: absolute;
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background: white;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1), 0 0 20px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-}
-
-.wheel-text {
-    position: absolute;
-    /* 放到轮盘正上方、圆盘外面，方便阅读 */
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 85%;
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
+    max-width: 600px;
     text-align: center;
-    padding: 8px 12px;
-    word-break: break-word;
-    background: rgba(255, 255, 255, 0.95);
+}
+
+.name-roller-subtitle {
+    font-size: 14px;
+    /* 右侧卡片背景是白色，这里用深色文字保证对比度 */
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.name-roller-box {
+    position: relative;
+    padding: 35px 20px;
     border-radius: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    /* 改为深色渐变背景，配合白色大字，更容易看清 */
+    background: linear-gradient(135deg, #2f3a8c 0%, #141a3b 50%, #050814 100%);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
 }
 
-.wheel-pointer {
+.name-roller-box::before {
+    content: '';
     position: absolute;
-    /* 指南针式指针：固定在转盘中心，朝上指向某个扇形 */
+    top: -50%;
+    left: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.45), transparent 60%);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.name-roller-label {
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ffd54f;
+    margin-bottom: 15px;
+}
+
+.name-roller-main {
+    position: relative;
+    z-index: 1;
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    min-height: 1.4em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 跑马灯轨道与单个名字元素 */
+.roller-track {
+    position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 0;
-    height: 0;
-    z-index: 20;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 48px;
+    transform: translateY(-50%);
+    will-change: transform;
 }
 
-.wheel-pointer::before {
-    content: '';
-    position: absolute;
-    top: -70px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 80px solid #fbc02d;
+.roller-name {
+    white-space: nowrap;
 }
 
-.wheel-pointer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 40px solid #f57c00;
-}
-
-.wheel-pointer.spinning {
-    animation: pointerSpin 0.05s linear infinite;
-}
-
-@keyframes pointerSpin {
-    0% {
-        transform: translateX(-50%) rotate(0deg);
-    }
-    100% {
-        transform: translateX(-50%) rotate(360deg);
-    }
+.name-roller-tip {
+    margin-top: 16px;
+    font-size: 13px;
+    color: #666;
+    opacity: 0.9;
 }
 
 /* 中奖结果 */
@@ -529,6 +506,27 @@ tbody tr.ineligible {
 
 .clear-btn:hover {
     background: #d32f2f;
+}
+
+.results-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.copy-btn {
+    padding: 10px 20px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.copy-btn:hover {
+    background: #43a047;
 }
 
 /* 模态框 */
@@ -657,6 +655,10 @@ tbody tr.ineligible {
     .main-content {
         grid-template-columns: 1fr;
     }
+
+    .lottery-display {
+        min-height: 260px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -668,18 +670,8 @@ tbody tr.ineligible {
         padding: 20px;
     }
     
-    .lottery-wheel {
-        width: 250px;
-        height: 250px;
-    }
-    
-    .wheel-center {
-        width: 160px;
-        height: 160px;
-    }
-    
-    .wheel-text {
-        font-size: 18px;
+    .lottery-display {
+        min-height: 220px;
     }
 }
 
