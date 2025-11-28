@@ -3,161 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>闻枫是傻杯</title>
-    <style>
-        body {
-            /* 使用本地图片并设置为平铺 */
-            background-image: url('wenfeng.png');
-            background-repeat: repeat;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            position: relative; /* 为绝对定位的箭头提供容器 */
-        }
-
-        .container {
-            text-align: center;
-            position: relative;
-            z-index: 10;
-        }
-
-        .flashing-text {
-            font-size: 10vw;
-            color: white;
-            font-weight: bold;
-            text-shadow: 
-                0 0 10px #fff, 
-                0 0 20px #fff, 
-                0 0 30px #ff00de, 
-                0 0 40px #ff00de, 
-                0 0 50px #ff00de, 
-                0 0 60px #ff00de, 
-                0 0 70px #ff00de;
-            animation: flash 2s infinite ease-in-out;
-        }
-
-        @keyframes flash {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.2;
-                transform: scale(1.05);
-            }
-        }
-
-        .surprise-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 40px;
-            border-radius: 15px;
-            z-index: 20;
-        }
-
-        #playButton {
-            font-size: 24px;
-            padding: 15px 30px;
-            cursor: pointer;
-            border: 3px solid #ff00de;
-            background-color: #fff;
-            color: #ff00de;
-            font-weight: bold;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            animation: pulse-button 1.5s infinite;
-        }
-
-        #playButton:hover {
-            background-color: #ff00de;
-            color: #fff;
-        }
-
-        .arrow {
-            font-size: 40px;
-            color: yellow;
-            position: absolute;
-            animation: blink-arrow 1s infinite;
-        }
-
-        @keyframes blink-arrow {
-            50% { opacity: 0; }
-        }
-        
-        @keyframes pulse-button {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 20, 147, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 20, 147, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 20, 147, 0); }
-        }
-
-    </style>
+    <title>抽奖系统</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1 class="flashing-text">闻枫是傻杯</h1>
+        <header>
+            <h1>🎉 抽奖系统</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧：数据管理区 -->
+            <div class="left-panel">
+                <div class="panel-section">
+                    <h2>📊 数据管理</h2>
+                    
+                    <div class="upload-section">
+                        <div class="upload-buttons">
+                            <label for="excelFile" class="upload-btn">
+                                <span>📁 导入Excel文件</span>
+                                <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
+                            </label>
+                            <button id="downloadTemplateBtn" class="download-btn">📥 下载模板文件</button>
+                        </div>
+                        <div class="file-info" id="fileInfo"></div>
+                        <div class="format-hint">
+                            <strong>格式说明：</strong>Excel文件需包含"姓名"和"出勤次数"两列，出勤次数范围0-8，≥7次可参与抽奖
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <label>
+                            <input type="checkbox" id="showAll" checked>
+                            显示所有人员（取消勾选仅显示可抽奖人员）
+                        </label>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="nameTable">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>姓名</th>
+                                    <th>出勤次数</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr class="empty-row">
+                                    <td colspan="5" class="empty-message">请导入Excel文件</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="stats-section">
+                        <div class="stat-item">
+                            <span class="stat-label">总人数：</span>
+                            <span class="stat-value" id="totalCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">可抽奖：</span>
+                            <span class="stat-value" id="eligibleCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">已抽取：</span>
+                            <span class="stat-value" id="drawnCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：抽奖区 -->
+            <div class="right-panel">
+                <div class="panel-section">
+                    <h2>🎲 抽奖区域</h2>
+                    
+                    <div class="lottery-controls">
+                        <div class="input-group">
+                            <label>抽取人数：</label>
+                            <input type="number" id="drawCount" min="1" value="1" placeholder="自动计算">
+                            <span class="hint">（5:1比例，可手动调整）</span>
+                        </div>
+                        <button id="drawBtn" class="draw-btn" disabled>开始抽奖</button>
+                        <button id="resetBtn" class="reset-btn">重置抽奖</button>
+                    </div>
+
+                    <div class="lottery-display" id="lotteryDisplay">
+                        <div class="wheel-container">
+                            <!-- 重新实现的转盘：Canvas 绘制扇形，外层容器整体旋转 -->
+                            <div class="wheel-graphic" id="wheelGraphic">
+                                <canvas id="wheelCanvas" width="400" height="400"></canvas>
+                            </div>
+                            <!-- 中心指南针指针 -->
+                            <div class="wheel-pointer" id="wheelPointer"></div>
+                            <!-- 中心圆形装饰 -->
+                            <div class="wheel-center"></div>
+                            <!-- 上方状态文字 -->
+                            <div class="wheel-text" id="wheelText">等待抽奖</div>
+                        </div>
+                    </div>
+
+                    <div class="results-section">
+                        <h3>🎊 中奖名单</h3>
+                        <div class="results-list" id="resultsList">
+                            <div class="empty-results">暂无中奖记录</div>
+                        </div>
+                        <button id="clearResultsBtn" class="clear-btn" style="display: none;">清空中奖记录</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="surprise-container" id="surprise">
-        <button id="playButton">点击这里有惊喜</button>
-        <!-- 自动生成箭头 -->
-        <script>
-            const surpriseBox = document.getElementById('surprise');
-            const button = document.getElementById('playButton');
-            const arrowCount = 20;
-            for (let i = 0; i < arrowCount; i++) {
-                const arrow = document.createElement('div');
-                arrow.classList.add('arrow');
-                arrow.innerHTML = ['&rarr;', '&darr;', '&larr;', '&uarr;', '&searr;', '&swarr;', '&nearr;', '&nwarr;'][Math.floor(Math.random() * 8)];
-                
-                // 在按钮周围随机分布
-                const angle = Math.random() * Math.PI * 2;
-                const radius = 120 + Math.random() * 80;
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
-
-                arrow.style.left = `calc(50% + ${x}px)`;
-                arrow.style.top = `calc(50% + ${y}px)`;
-                arrow.style.transform = `translate(-50%, -50%) rotate(${angle + Math.PI}rad)`; // 指向中心
-                arrow.style.animationDelay = `${Math.random()}s`;
-
-                surpriseBox.appendChild(arrow);
-            }
-        </script>
+    <!-- 编辑模态框 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h2>编辑人员信息</h2>
+            <div class="modal-form">
+                <div class="form-group">
+                    <label>姓名：</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>出勤次数：</label>
+                    <input type="number" id="editAttendance" min="0" max="8" required>
+                </div>
+                <div class="form-actions">
+                    <button id="saveEditBtn" class="save-btn">保存</button>
+                    <button id="cancelEditBtn" class="cancel-btn">取消</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        document.getElementById('playButton').addEventListener('click', function() {
-            // 隐藏惊喜容器
-            document.getElementById('surprise').style.display = 'none';
-
-            const textToSpeak = '闻枫是傻杯';
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.9;
-
-            function speak() {
-                window.speechSynthesis.speak(utterance);
-            }
-
-            utterance.onend = function() {
-                // 使用一个小的随机延迟来避免过于机械的循环
-                setTimeout(speak, Math.random() * 500 + 200);
-            };
-
-            speak(); // 第一次播放
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
+
