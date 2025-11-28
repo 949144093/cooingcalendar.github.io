@@ -13,6 +13,15 @@
             <h1>🎉 晚风浮影专用抽奖系统</h1>
         </header>
 
+        <!-- 抽奖类型子页面切换 -->
+        <div class="mode-switch">
+            <button id="modeMonthlyBtn" class="mode-btn active">抽月卡</button>
+            <button id="modeBattleBtn" class="mode-btn">抽战令</button>
+        </div>
+        <div class="mode-desc" id="modeDesc">
+            当前模式：抽月卡（出勤次数 ≥ 7 次可参与）
+        </div>
+
         <div class="main-content">
             <!-- 左侧：数据管理区 -->
             <div class="left-panel">
@@ -29,7 +38,7 @@
                         </div>
                         <div class="file-info" id="fileInfo"></div>
                         <div class="format-hint">
-                            <strong>格式说明：</strong>Excel文件需包含"姓名"和"出勤次数"两列，出勤次数范围0-8，≥7次可参与抽奖
+                            <strong>格式说明：</strong>Excel文件需包含"姓名"和"出勤次数"两列，出勤次数范围0-8；抽月卡：出勤 ≥ 7 次可参与；抽战令：满勤 8 次可参与
                         </div>
                     </div>
 
@@ -108,7 +117,7 @@
                     </div>
 
                     <div class="results-section">
-                        <h3>🎊 中奖名单</h3>
+                        <h3 id="resultsTitle">🎊 月卡中奖名单</h3>
                         <div class="results-list" id="resultsList">
                             <div class="empty-results">暂无中奖记录</div>
                         </div>

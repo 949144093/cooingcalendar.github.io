@@ -1,6 +1,10 @@
 // 数据存储
 let nameList = [];
-let drawnList = [];
+// 月卡与战令分别独立的中奖列表
+let drawnListMonthly = [];
+let drawnListBattle = [];
+// 当前模式：'monthly' 抽月卡，'battle' 抽战令
+let currentMode = 'monthly';
 let currentEditIndex = -1;
 
 // DOM元素
@@ -26,6 +30,101 @@ const editNameInput = document.getElementById('editName');
 const editAttendanceInput = document.getElementById('editAttendance');
 const saveEditBtn = document.getElementById('saveEditBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
+// 模式切换相关
+const modeMonthlyBtn = document.getElementById('modeMonthlyBtn');
+const modeBattleBtn = document.getElementById('modeBattleBtn');
+const modeDesc = document.getElementById('modeDesc');
+const resultsTitle = document.getElementById('resultsTitle');
+
+// 根据模式判断是否符合当前抽奖条件
+function isEligibleForMode(item, mode = currentMode) {
+    if (mode === 'monthly') {
+        // 抽月卡：出勤次数 ≥ 7
+        return item.attendance >= 7;
+    } else {
+        // 抽战令：必须满勤 8 次
+        return item.attendance === 8;
+    }
+}
+
+// 获取当前模式下的“是否已中奖”标记
+function isDrawnInMode(item, mode = currentMode) {
+    if (mode === 'monthly') {
+        return !!item.drawnMonthly;
+    } else {
+        return !!item.drawnBattle;
+    }
+}
+
+// 设置当前模式下的“已中奖”状态
+function setDrawnInMode(item, drawn, mode = currentMode) {
+    if (mode === 'monthly') {
+        item.drawnMonthly = drawn;
+    } else {
+        item.drawnBattle = drawn;
+    }
+}
+
+// 获取当前模式对应的中奖列表
+function getCurrentDrawnList() {
+    return currentMode === 'monthly' ? drawnListMonthly : drawnListBattle;
+}
+
+// 设置当前模式对应的中奖列表
+function setCurrentDrawnList(list) {
+    if (currentMode === 'monthly') {
+        drawnListMonthly = list;
+    } else {
+        drawnListBattle = list;
+    }
+}
+
+// 根据当前模式更新右侧标题/说明
+function updateModeUITexts() {
+    if (!modeDesc || !resultsTitle) return;
+    if (currentMode === 'monthly') {
+        modeDesc.textContent = '当前模式：抽月卡（出勤次数 ≥ 7 次可参与）';
+        resultsTitle.textContent = '🎊 月卡中奖名单';
+    } else {
+        modeDesc.textContent = '当前模式：抽战令（满勤 8 次可参与）';
+        resultsTitle.textContent = '🎊 战令中奖名单';
+    }
+}
+
+// 更新抽奖按钮是否可用
+function updateDrawButtonState() {
+    const eligible = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item)).length;
+    drawBtn.disabled = eligible === 0 || nameList.length === 0;
+}
+
+// 模式切换
+function switchMode(mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+
+    if (modeMonthlyBtn && modeBattleBtn) {
+        if (currentMode === 'monthly') {
+            modeMonthlyBtn.classList.add('active');
+            modeBattleBtn.classList.remove('active');
+        } else {
+            modeBattleBtn.classList.add('active');
+            modeMonthlyBtn.classList.remove('active');
+        }
+    }
+
+    updateModeUITexts();
+    updateTable();
+    updateStats();
+    updateDrawCount();
+    updateRollerText();
+    renderResultsList();
+    updateDrawButtonState();
+}
+
+if (modeMonthlyBtn && modeBattleBtn) {
+    modeMonthlyBtn.addEventListener('click', () => switchMode('monthly'));
+    modeBattleBtn.addEventListener('click', () => switchMode('battle'));
+}
 
 // 下载模板文件
 downloadTemplateBtn.addEventListener('click', downloadTemplate);
@@ -95,23 +194,30 @@ function handleFileUpload(event) {
                     id: index,
                     name: String(name || '').trim(),
                     attendance: parseInt(attendance) || 0,
-                    drawn: false
+                    // 分别记录两个模式下的中奖状态
+                    drawnMonthly: false,
+                    drawnBattle: false
                 };
             }).filter(item => item.name); // 过滤掉空名字
             
-            // 重置抽奖状态
-            drawnList = [];
-            nameList.forEach(item => item.drawn = false);
+            // 重置抽奖状态（两个模式都清空）
+            drawnListMonthly = [];
+            drawnListBattle = [];
+            nameList.forEach(item => {
+                item.drawnMonthly = false;
+                item.drawnBattle = false;
+            });
             
             updateTable();
             updateStats();
             // 重新启用自动建议
             drawCountAuto = true;
             updateDrawCount();
-            drawBtn.disabled = false;
-            
-            // 更新名字滚动区域提示
             updateRollerText();
+            updateModeUITexts();
+            updateDrawButtonState();
+            // 初始默认月卡模式
+            switchMode('monthly');
             
             alert(`成功导入 ${nameList.length} 条数据！`);
         } catch (error) {
@@ -126,7 +232,7 @@ function handleFileUpload(event) {
 // 更新表格
 function updateTable() {
     const showAll = showAllCheckbox.checked;
-    const filteredList = showAll ? nameList : nameList.filter(item => item.attendance >= 7);
+    const filteredList = showAll ? nameList : nameList.filter(item => isEligibleForMode(item));
     
     if (filteredList.length === 0) {
         tableBody.innerHTML = '<tr class="empty-row"><td colspan="5" class="empty-message">暂无数据</td></tr>';
@@ -134,12 +240,12 @@ function updateTable() {
     }
     
     tableBody.innerHTML = filteredList.map((item, index) => {
-        const isEligible = item.attendance >= 7;
-        const isDrawn = item.drawn;
+        const isEligible = isEligibleForMode(item);
+        const isDrawn = isDrawnInMode(item);
         const rowClass = isEligible ? 'eligible' : 'ineligible';
         const statusClass = isEligible ? 'status-eligible' : 'status-ineligible';
         const statusText = isEligible ? '可抽奖' : '不可抽奖';
-        const drawnText = isDrawn ? ' (已抽中)' : '';
+        const drawnText = isDrawn ? ' (本模式已抽中)' : '';
         
         return `
             <tr class="${rowClass}" data-id="${item.id}">
@@ -163,8 +269,8 @@ function updateTable() {
 // 更新统计信息
 function updateStats() {
     const total = nameList.length;
-    const eligible = nameList.filter(item => item.attendance >= 7 && !item.drawn).length;
-    const drawn = drawnList.length;
+    const eligible = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item)).length;
+    const drawn = getCurrentDrawnList().length;
     
     totalCountSpan.textContent = total;
     eligibleCountSpan.textContent = eligible;
@@ -176,7 +282,7 @@ let drawCountAuto = true;
 
 // 更新抽奖数量（5:1比例）
 function updateDrawCount() {
-    const eligible = nameList.filter(item => item.attendance >= 7 && !item.drawn).length;
+    const eligible = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item)).length;
     const suggestedCount = Math.floor(eligible / 5);
     
     // 只在允许自动模式时才改动实际输入值
@@ -209,7 +315,9 @@ function deleteItem(id) {
     if (!confirm('确定要删除这条记录吗？')) return;
     
     nameList = nameList.filter(item => item.id !== id);
-    drawnList = drawnList.filter(item => item.id !== id);
+    // 两个模式下的中奖记录都要移除
+    drawnListMonthly = drawnListMonthly.filter(item => item.id !== id);
+    drawnListBattle = drawnListBattle.filter(item => item.id !== id);
     
     updateTable();
     updateStats();
@@ -239,16 +347,21 @@ saveEditBtn.addEventListener('click', function() {
         item.name = name;
         item.attendance = attendance;
         
-        // 如果出勤次数不足，取消已抽中状态
-        if (attendance < 7 && item.drawn) {
-            item.drawn = false;
-            drawnList = drawnList.filter(i => i.id !== item.id);
+        // 如果出勤次数下降，检查是否还满足两个模式的抽奖条件，不满足则取消对应模式的中奖状态
+        if (attendance < 7 && item.drawnMonthly) {
+            item.drawnMonthly = false;
+            drawnListMonthly = drawnListMonthly.filter(i => i.id !== item.id);
+        }
+        if (attendance < 8 && item.drawnBattle) {
+            item.drawnBattle = false;
+            drawnListBattle = drawnListBattle.filter(i => i.id !== item.id);
         }
         
         updateTable();
         updateStats();
         updateDrawCount();
         updateRollerText();
+        updateDrawButtonState();
     }
     
     editModal.style.display = 'none';
@@ -278,7 +391,7 @@ let nameRollingTimer = null;
 
 // 根据当前可抽奖人数，更新中心提示文字和人数统计
 function updateRollerText() {
-    const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
+    const eligibleList = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item));
 
     // 重置名字滚动
     if (nameRollingTimer) {
@@ -356,7 +469,7 @@ function startNameRolling(winner, eligibleList, onFinish) {
 }
 
 function startLottery() {
-    const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
+    const eligibleList = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item));
     
     if (eligibleList.length === 0) {
         alert('没有可抽奖的人员了！');
@@ -392,12 +505,12 @@ function startLottery() {
 function performSingleDraw() {
     if (currentDrawIndex >= drawQueue.length) {
         // 所有抽奖完成
-        drawBtn.disabled = nameList.filter(item => item.attendance >= 7 && !item.drawn).length > 0;
+        updateDrawButtonState();
         return;
     }
     
     const winner = drawQueue[currentDrawIndex];
-    const eligibleList = nameList.filter(item => item.attendance >= 7 && !item.drawn);
+    const eligibleList = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item));
     
     // 找到中奖者在当前可抽奖列表中的位置，确保逻辑一致
     const winnerIndex = eligibleList.findIndex(item => item.id === winner.id);
@@ -410,12 +523,13 @@ function performSingleDraw() {
     
     // 抽奖过程中，让中心文字以「从右往左滑动、逐渐减速」的形式轮流展示姓名
     startNameRolling(winner, eligibleList, () => {
-        // 动画结束，标记为已抽中
-        winner.drawn = true;
-        drawnList.push(winner);
+        // 动画结束，标记为已抽中（仅当前模式）
+        setDrawnInMode(winner, true);
+        const list = getCurrentDrawnList();
+        list.push(winner);
 
-        // 显示中奖结果
-        displaySingleResult(winner);
+        // 显示中奖结果（根据当前模式渲染完整列表）
+        renderResultsList();
 
         // 更新界面
         updateTable();
@@ -430,30 +544,39 @@ function performSingleDraw() {
                     performSingleDraw();
                 }, 800);
             } else {
-                drawBtn.disabled = nameList.filter(item => item.attendance >= 7 && !item.drawn).length > 0;
+                updateDrawButtonState();
             }
         }, 600);
     });
 }
 
-function displaySingleResult(winner) {
-    const resultItem = document.createElement('div');
-    resultItem.className = 'result-item';
-    resultItem.textContent = `🎉 ${winner.name} (出勤: ${winner.attendance}/8)`;
-    resultsList.appendChild(resultItem);
-    
-    // 移除空提示
-    const emptyResults = resultsList.querySelector('.empty-results');
-    if (emptyResults) {
-        emptyResults.remove();
+// 按当前模式渲染中奖结果列表
+function renderResultsList() {
+    const list = getCurrentDrawnList();
+
+    resultsList.innerHTML = '';
+
+    if (!list || list.length === 0) {
+        resultsList.innerHTML = '<div class="empty-results">暂无中奖记录</div>';
+        clearResultsBtn.style.display = 'none';
+        if (copyResultsBtn) {
+            copyResultsBtn.style.display = 'none';
+        }
+        return;
     }
-    
-    // 显示操作按钮
+
+    list.forEach(item => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'result-item';
+        resultItem.textContent = `🎉 ${item.name} (出勤: ${item.attendance}/8)`;
+        resultsList.appendChild(resultItem);
+    });
+
     clearResultsBtn.style.display = 'block';
     if (copyResultsBtn) {
         copyResultsBtn.style.display = 'block';
     }
-    
+
     // 滚动到底部
     resultsList.scrollTop = resultsList.scrollHeight;
 }
@@ -462,13 +585,10 @@ function displaySingleResult(winner) {
 resetBtn.addEventListener('click', function() {
     if (!confirm('确定要重置所有抽奖记录吗？这将清空所有中奖记录。')) return;
     
-    nameList.forEach(item => item.drawn = false);
-    drawnList = [];
-    resultsList.innerHTML = '<div class="empty-results">暂无中奖记录</div>';
-    clearResultsBtn.style.display = 'none';
-    if (copyResultsBtn) {
-        copyResultsBtn.style.display = 'none';
-    }
+    // 仅重置当前模式下的抽奖状态
+    nameList.forEach(item => setDrawnInMode(item, false));
+    setCurrentDrawnList([]);
+    renderResultsList();
     
     // 停止名字滚动并恢复提示文字
     if (nameRollingTimer) {
@@ -484,30 +604,28 @@ resetBtn.addEventListener('click', function() {
     drawCountAuto = true;
     updateDrawCount();
     updateRollerText();
-    drawBtn.disabled = nameList.filter(item => item.attendance >= 7).length === 0;
+    updateDrawButtonState();
 });
 
 // 清空中奖记录
 clearResultsBtn.addEventListener('click', function() {
     if (!confirm('确定要清空中奖记录吗？')) return;
     
-    resultsList.innerHTML = '<div class="empty-results">暂无中奖记录</div>';
-    clearResultsBtn.style.display = 'none';
-    if (copyResultsBtn) {
-        copyResultsBtn.style.display = 'none';
-    }
+    setCurrentDrawnList([]);
+    renderResultsList();
 });
 
 // 复制中奖结果
 if (copyResultsBtn) {
     copyResultsBtn.addEventListener('click', function () {
-        if (drawnList.length === 0) {
+        const list = getCurrentDrawnList();
+        if (!list || list.length === 0) {
             alert('当前没有可复制的中奖记录！');
             return;
         }
 
         // 按抽取顺序导出：1、姓名（出勤x/8）
-        const lines = drawnList.map((item, index) => {
+        const lines = list.map((item, index) => {
             return `${index + 1}、${item.name}（出勤 ${item.attendance}/8）`;
         });
 
@@ -542,7 +660,7 @@ drawCountInput.addEventListener('input', function() {
     // 用户手动修改后，不再自动覆盖这个值
     drawCountAuto = false;
 
-    const eligible = nameList.filter(item => item.attendance >= 7 && !item.drawn).length;
+    const eligible = nameList.filter(item => isEligibleForMode(item) && !isDrawnInMode(item)).length;
     const value = parseInt(this.value) || 0;
     
     if (value > eligible) {
